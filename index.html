@@ -5,34 +5,36 @@
     <meta name="theme-color" content="#27ae60">  
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>野郞 운동관리 v4.3</title>
+    <title>野郞 운동관리 v4.4</title>
     <style>
         html { font-size: 13px; } 
         body { margin: 0; padding: 12px; font-family: 'Malgun Gothic', sans-serif; background: #ffffff; color: #333; overflow-x: hidden; }
-        .main-title { text-align: center; font-size: 2.2rem; font-weight: 900; color: #2c3e50; padding: 20px 0 10px; border-bottom: 5px solid #f1c40f; letter-spacing: 5px; }
-        .symbol-area { text-align: center; padding: 25px 0; font-size: 3.5rem; display: flex; justify-content: center; gap: 15px; }
+        .main-title { text-align: center; font-size: 2.0rem; font-weight: 900; color: #2c3e50; padding: 15px 0 10px; border-bottom: 5px solid #f1c40f; letter-spacing: 5px; }
+        .symbol-area { text-align: center; padding: 15px 0; font-size: 3rem; display: flex; justify-content: center; gap: 15px; }
         
         /* 설정 영역 */
         .select-container { background: #f8f9fa; padding: 15px; border-radius: 15px; margin-bottom: 15px; border: 1px solid #dfe6e9; }
         .option-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
-        .option-label { font-size: 1.2rem; font-weight: 800; color: #2c3e50; }
-        select { width: 60%; padding: 8px; font-size: 1.3rem; font-weight: 800; border-radius: 10px; border: 2px solid #27ae60; }
+        .option-label { font-size: 1.1rem; font-weight: 800; color: #2c3e50; }
+        select { width: 60%; padding: 6px; font-size: 1.2rem; font-weight: 800; border-radius: 10px; border: 2px solid #27ae60; }
         
-        /* 소리 알람 스위치 */
         .sound-toggle { display: flex; gap: 5px; background: #dfe6e9; padding: 5px; border-radius: 10px; }
-        .sound-btn { padding: 8px 15px; border-radius: 8px; border: none; font-weight: bold; cursor: pointer; }
+        .sound-btn { padding: 6px 12px; border-radius: 8px; border: none; font-weight: bold; cursor: pointer; }
         .sound-on.active { background: #27ae60; color: white; }
         .sound-off.active { background: #e74c3c; color: white; }
 
         /* 버튼 및 대시보드 */
-        .btn { width: 100%; padding: 18px; border: none; border-radius: 15px; font-size: 1.6rem; font-weight: 900; cursor: pointer; color: white; margin-bottom: 12px; display: block; box-shadow: 0 5px #1e8449; }
+        .btn { width: 100%; padding: 15px; border: none; border-radius: 15px; font-size: 1.5rem; font-weight: 900; cursor: pointer; color: white; margin-bottom: 10px; display: block; box-shadow: 0 5px #1e8449; }
         .btn-start { background: #27ae60; }
         .btn-history { background: #3498db; box-shadow: 0 5px #2980b9; }
-        #map { width: 100%; height: 320px; border-radius: 20px; border: 4px solid #27ae60; margin-bottom: 15px; background: #eee; }
-        .dashboard { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 15px; }
-        .card { background: #f1f4f7; padding: 12px 2px; border-radius: 15px; text-align: center; border: 1px solid #ced6e0; }
-        .card-label { font-size: 1rem; font-weight: 900; background: #dfe6e9; border-radius: 7px; margin: 0 10px 6px; }
-        .card-value { font-size: 1.8rem; font-weight: 900; }
+        
+        /* 지도 크기 축소 */
+        #map { width: 100%; height: 260px; border-radius: 20px; border: 4px solid #27ae60; margin-bottom: 10px; background: #eee; }
+        
+        .dashboard { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 10px; }
+        .card { background: #f1f4f7; padding: 8px 2px; border-radius: 12px; text-align: center; border: 1px solid #ced6e0; }
+        .card-label { font-size: 0.9rem; font-weight: 900; background: #dfe6e9; border-radius: 7px; margin: 0 8px 4px; }
+        .card-value { font-size: 1.6rem; font-weight: 900; }
         
         #history-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #ffffff; z-index: 10000; padding: 15px; box-sizing: border-box; overflow-y: auto; }
     </style>
@@ -52,7 +54,7 @@
                     <option value="8.0">🚴‍♂️ 자전거</option>
                 </select>
             </div>
-            <div class="option-row" style="margin-top:15px;">
+            <div class="option-row" style="margin-top:10px;">
                 <span class="option-label">🔊 소리 알림</span>
                 <div class="sound-toggle">
                     <button id="soundYes" class="sound-btn sound-on active" onclick="setSound(true)">YES</button>
@@ -71,10 +73,8 @@
             <div class="card"><div class="card-label">거리(km)</div><div id="distance" class="card-value">0.00</div></div>
             <div class="card"><div class="card-label">현재속도</div><div id="curSpeed" class="card-value" style="color:#e67e22;">0.0</div></div>
             <div class="card"><div class="card-label">평균속도</div><div id="avgSpeed" class="card-value" style="color:#2980b9;">0.0</div></div>
-            <div class="card"><div class="card-label">칼로리</div><div id="calories" class="card-value">0</div></div>
-            <div class="card"><div class="card-label">상태</div><div id="status" class="card-value" style="font-size:1.1rem; color:#27ae60;">기록중</div></div>
         </div>
-        <button id="stopBtn" class="btn btn-stop" style="background:#e74c3c;" onclick="confirmStop()">■ 운동 종료</button>
+        <button id="stopBtn" class="btn btn-stop" style="background:#e74c3c; box-shadow: 0 5px #c0392b;" onclick="confirmStop()">■ 운동 종료</button>
     </div>
 
     <script>
@@ -82,23 +82,19 @@
         var path = [], totalDistance = 0, lastAnnouncedKm = 0;
         var isSoundOn = true;
 
-        // [1] 음성 서비스 설정
         function setSound(val) {
             isSoundOn = val;
             document.getElementById('soundYes').classList.toggle('active', val);
             document.getElementById('soundNo').classList.toggle('active', !val);
         }
 
-        // [2] TTS 음성 안내 함수
         function speak(text) {
             if (!isSoundOn) return;
             var msg = new SpeechSynthesisUtterance(text);
             msg.lang = 'ko-KR';
-            msg.rate = 1.0;
             window.speechSynthesis.speak(msg);
         }
 
-        // [3] 시작 신호음 (비프음 구현)
         function playStartBeep() {
             if (!isSoundOn) return;
             const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -110,9 +106,7 @@
                 osc.start(audioCtx.currentTime + start);
                 osc.stop(audioCtx.currentTime + start + duration);
             };
-            playNote(440, 0, 0.4); // 뚜~
-            playNote(440, 0.6, 0.4); // 우 뚜~
-            playNote(880, 1.2, 0.6); // 우 삐~
+            playNote(440, 0, 0.4); playNote(440, 0.6, 0.4); playNote(880, 1.2, 0.6);
             setTimeout(() => speak("운동 서비스를 시작합니다."), 2000);
         }
 
@@ -121,7 +115,7 @@
             document.getElementById('active-area').style.display = 'block';
             startTime = new Date();
             timerInterval = setInterval(updateTimer, 1000);
-            playStartBeep(); // 시작 알림
+            playStartBeep();
             loadKakaoMap();
         }
 
@@ -157,13 +151,12 @@
                     var currentKm = totalDistance / 1000;
                     document.getElementById('distance').innerText = currentKm.toFixed(2);
                     
-                    // [4] 매 1km마다 음성 브리핑
                     var floorKm = Math.floor(currentKm);
                     if (floorKm > lastAnnouncedKm) {
                         lastAnnouncedKm = floorKm;
                         var curSpeed = (pos.coords.speed && pos.coords.speed > 0) ? (pos.coords.speed * 3.6).toFixed(1) : "0";
                         var avgSpeed = document.getElementById('avgSpeed').innerText;
-                        speak(`${floorKm} 킬로미터를 통과했습니다. 현재 거리는 ${currentKm.toFixed(1)} 킬로미터 이동 중이며, 현재 속도는 시속 ${curSpeed} 킬로미터, 평균 속도는 시속 ${avgSpeed} 킬로미터입니다.`);
+                        speak(`${floorKm} 킬로미터를 통과했습니다.`);
                     }
 
                     document.getElementById('curSpeed').innerText = (pos.coords.speed && pos.coords.speed > 0) ? (pos.coords.speed * 3.6).toFixed(1) : "0.0";
@@ -180,20 +173,37 @@
             document.getElementById('timer').innerText = String(diff.getUTCMinutes()).padStart(2, '0') + ":" + String(diff.getUTCSeconds()).padStart(2, '0');
         }
 
+        // [종료 로직 수정]
         function confirmStop() {
-            clearInterval(timerInterval);
-            if(watchId) navigator.geolocation.clearWatch(watchId);
-            speak("운동을 종료합니다. 수고하셨습니다.");
-            location.reload(); 
+            if (confirm("운동을 종료하시겠습니까? 현재까지의 기록을 저장합니다.")) {
+                clearInterval(timerInterval);
+                if(watchId) navigator.geolocation.clearWatch(watchId);
+                
+                // 데이터 저장 로직 (localStorage 활용)
+                const record = {
+                    date: new Date().toLocaleString(),
+                    distance: document.getElementById('distance').innerText,
+                    time: document.getElementById('timer').innerText,
+                    avgSpeed: document.getElementById('avgSpeed').innerText
+                };
+                let history = JSON.parse(localStorage.getItem('workoutHistory') || '[]');
+                history.push(record);
+                localStorage.setItem('workoutHistory', JSON.stringify(history));
+
+                speak("운동을 종료하고 기록을 저장했습니다. 수고하셨습니다.");
+                setTimeout(() => location.reload(), 2000); 
+            }
         }
 
         function toggleHistory(show) {
-            // (기존 기록 확인 로직 생략, v4.2와 동일하게 작동)
-            alert("기록 확인 기능은 v4.2와 동일하게 작동합니다.");
+            let history = JSON.parse(localStorage.getItem('workoutHistory') || '[]');
+            if (history.length === 0) {
+                alert("저장된 기록이 없습니다.");
+                return;
+            }
+            let msg = history.map(h => `[${h.date}] ${h.distance}km, ${h.time}`).join('\n');
+            alert("최근 운동 기록:\n" + msg);
         }
-         if ('serviceWorker' in navigator) {
-           navigator.serviceWorker.register('./service-worker.js');
-       }
     </script>
 </body>
 </html>
