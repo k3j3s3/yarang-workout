@@ -2,29 +2,33 @@
 <html>
 <head>
     <meta charset="utf-8">
-    <title>野郞 운동관리 v2.2</title>
-    <script type="text/javascript" src="https://dapi.kakao.com/v2/maps/sdk.js?appkey=271e6bea302e93a84488444c38490d7b&autoload=false"></script>
+    <title>野郞 운동관리 v3.0</title>
+    <script type="text/javascript" src="https://dapi.kakao.com/v2/maps/sdk.js?appkey=6abfda3c10053ca5baa728cd01a41803&autoload=false"></script>
     <style>
-        /* 모든 폰트 크기 대폭 확대 및 배경 최적화 */
         body { margin: 0; padding: 10px; font-family: 'Malgun Gothic', sans-serif; background: #1a1a1a; color: white; }
         
-        /* 상단 대시보드: 글씨 크기 극대화 */
-        .dashboard { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 15px; }
-        .card { background: #2c3e50; padding: 20px; border-radius: 20px; text-align: center; border: 2px solid #34495e; }
-        .card-label { font-size: 1.4rem; color: #bdc3c7; margin-bottom: 8px; font-weight: bold; }
-        .card-value { font-size: 2.5rem; font-weight: bold; color: #f1c40f; } /* 노란색 왕글씨 */
-        
-        /* 지도 영역 */
-        #map { width: 100%; height: 300px; border-radius: 20px; border: 3px solid #f1c40f; }
+        /* 1. 박스 안 제목과 숫자 모두 대폭 확대 */
+        .dashboard { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px; }
+        .card { background: #2c3e50; padding: 25px 10px; border-radius: 25px; text-align: center; border: 3px solid #34495e; }
+        .card-label { font-size: 2rem; color: #ffffff; margin-bottom: 15px; font-weight: bold; background: #455a64; border-radius: 10px; }
+        .card-value { font-size: 3.2rem; font-weight: bold; color: #f1c40f; } 
 
-        /* 버튼: 더 크고 누르기 쉽게 */
-        .btn-group { display: flex; gap: 15px; margin-top: 15px; }
-        .btn { flex: 1; padding: 25px; border: none; border-radius: 15px; font-size: 1.8rem; font-weight: bold; cursor: pointer; color: white; }
-        .btn-start { background: #27ae60; box-shadow: 0 6px #1e8449; }
-        .btn-stop { background: #e74c3c; box-shadow: 0 6px #c0392b; display: none; }
-        
-        /* 하단 상태바 */
-        #status-bar { margin-top: 15px; text-align: center; font-size: 1.2rem; color: #95a5a6; }
+        #map { width: 100%; height: 350px; border-radius: 20px; border: 3px solid #f1c40f; margin-bottom: 15px; }
+
+        .btn-group { display: flex; gap: 15px; margin-bottom: 20px; }
+        .btn { flex: 1; padding: 30px; border: none; border-radius: 20px; font-size: 2.2rem; font-weight: bold; cursor: pointer; color: white; }
+        .btn-start { background: #27ae60; box-shadow: 0 8px #1e8449; }
+        .btn-stop { background: #e74c3c; box-shadow: 0 8px #c0392b; display: none; }
+
+        /* 결과 보고서 (팝업 대신 화면에 크게 표시) */
+        #result-report { display: none; background: #f1c40f; color: #1a1a1a; padding: 30px; border-radius: 25px; margin-top: 20px; text-align: center; }
+        #result-report h2 { font-size: 2.5rem; margin: 0 0 20px 0; }
+        .report-item { font-size: 2.2rem; font-weight: bold; margin: 10px 0; border-bottom: 2px solid #1a1a1a; padding-bottom: 10px; }
+
+        /* 기록 리스트 */
+        .history-section { margin-top: 30px; background: #333; padding: 15px; border-radius: 20px; }
+        .history-title { font-size: 1.8rem; margin-bottom: 15px; color: #f1c40f; text-align: center; }
+        .history-item { background: #444; padding: 15px; border-radius: 15px; margin-bottom: 10px; font-size: 1.2rem; display: flex; justify-content: space-between; }
     </style>
 </head>
 <body>
@@ -33,28 +37,40 @@
         <div class="card"><div class="card-label">시간</div><div id="timer" class="card-value">00:00</div></div>
         <div class="card"><div class="card-label">거리(km)</div><div id="distance" class="card-value">0.00</div></div>
         <div class="card"><div class="card-label">칼로리</div><div id="calories" class="card-value">0</div></div>
-        <div class="card"><div class="card-label">상태</div><div id="status" class="card-value" style="font-size:1.5rem;">대기</div></div>
+        <div class="card"><div class="card-label">상태</div><div id="status" class="card-value" style="font-size:1.8rem;">대기</div></div>
     </div>
 
     <div id="map"></div>
 
     <div class="btn-group">
-        <button id="startBtn" class="btn btn-start" onclick="startWorkout()">▶ 운동 시작</button>
-        <button id="stopBtn" class="btn btn-stop" onclick="stopWorkout()">■ 운동 종료</button>
+        <button id="startBtn" class="btn btn-start" onclick="startWorkout()">▶ 시작</button>
+        <button id="stopBtn" class="btn btn-stop" onclick="stopWorkout()">■ 종료</button>
     </div>
 
-    <div id="status-bar">📡 수신중: <span id="lat">-</span>, <span id="lng">-</span></div>
+    <div id="result-report">
+        <h2>🎉 운동 완료 보고서</h2>
+        <div class="report-item">📏 거리: <span id="res-dist"></span> km</div>
+        <div class="report-item">🔥 칼로리: <span id="res-kcal"></span> kcal</div>
+        <div class="report-item">⏱ 시간: <span id="res-time"></span></div>
+        <button class="btn" style="background:#1a1a1a; margin-top:20px;" onclick="location.reload()">확인 완료</button>
+    </div>
+
+    <div class="history-section">
+        <div class="history-title">📅 최근 운동 기록</div>
+        <div id="history-list"></div>
+    </div>
 
     <script>
         var map, marker, polyline, startTime, timerInterval, watchId;
         var path = [];
         var totalDistance = 0;
 
+        window.onload = showHistory; // 페이지 열면 기록 출력
+
         function startWorkout() {
             document.getElementById('startBtn').style.display = 'none';
             document.getElementById('stopBtn').style.display = 'block';
             document.getElementById('status').innerText = "기록중";
-            
             startTime = new Date();
             timerInterval = setInterval(updateTimer, 1000);
 
@@ -64,13 +80,12 @@
                 map = new kakao.maps.Map(mapContainer, mapOption); 
                 marker = new kakao.maps.Marker({ position: map.getCenter() }); 
                 marker.setMap(map); 
-                polyline = new kakao.maps.Polyline({ path: path, strokeWeight: 8, strokeColor: '#FF0000', strokeOpacity: 0.8 });
+                polyline = new kakao.maps.Polyline({ path: path, strokeWeight: 10, strokeColor: '#FF0000', strokeOpacity: 0.8 });
                 polyline.setMap(map);
 
                 if (navigator.geolocation) {
                     watchId = navigator.geolocation.watchPosition(function(pos) {
-                        var lat = pos.coords.latitude;
-                        var lon = pos.coords.longitude;
+                        var lat = pos.coords.latitude, lon = pos.coords.longitude;
                         var newPos = new kakao.maps.LatLng(lat, lon);
                         path.push(newPos);
                         polyline.setPath(path);
@@ -78,13 +93,9 @@
                             var line = new kakao.maps.Polyline({ path: [path[path.length - 2], newPos] });
                             totalDistance += line.getLength();
                         }
-                        document.getElementById('lat').innerText = lat.toFixed(4);
-                        document.getElementById('lng').innerText = lon.toFixed(4);
                         document.getElementById('distance').innerText = (totalDistance / 1000).toFixed(2);
                         map.setCenter(newPos);
                         marker.setPosition(newPos);
-                        
-                        // 칼로리 계산 (MET 3.5 기준)
                         var kcal = 3.5 * 70 * ((new Date() - startTime) / 3600000);
                         document.getElementById('calories').innerText = Math.round(kcal);
                     }, null, { enableHighAccuracy: true });
@@ -104,18 +115,34 @@
             navigator.geolocation.clearWatch(watchId);
             
             const dist = document.getElementById('distance').innerText;
-            const time = document.getElementById('timer').innerText;
             const kcal = document.getElementById('calories').innerText;
+            const time = document.getElementById('timer').innerText;
 
-            // 데이터 저장
+            // 기록 저장
             let history = JSON.parse(localStorage.getItem('yarang_history') || "[]");
-            history.unshift({ date: new Date().toLocaleString(), dist, time, kcal });
-            localStorage.setItem('yarang_history', JSON.stringify(history));
+            history.unshift({ date: new Date().toLocaleDateString(), dist, kcal, time });
+            localStorage.setItem('yarang_history', JSON.stringify(history.slice(0, 10))); // 최근 10개만 저장
 
-            // 형님 요청대로 핵심 내용만 팝업창에 표시
-            alert("기록이 저장되었습니다.\n\n거리: " + dist + "km\n칼로리: " + kcal + "kcal\n시간: " + time);
-            
-            location.reload(); 
+            // 결과 화면 표시
+            document.querySelector('.dashboard').style.display = 'none';
+            document.getElementById('map').style.display = 'none';
+            document.querySelector('.btn-group').style.display = 'none';
+            document.getElementById('res-dist').innerText = dist;
+            document.getElementById('res-kcal').innerText = kcal;
+            document.getElementById('res-time').innerText = time;
+            document.getElementById('result-report').style.display = 'block';
+        }
+
+        function showHistory() {
+            let history = JSON.parse(localStorage.getItem('yarang_history') || "[]");
+            let listHtml = history.map(item => `
+                <div class="history-item">
+                    <span>${item.date}</span>
+                    <span>${item.dist}km</span>
+                    <span>${item.time}</span>
+                </div>
+            `).join('');
+            document.getElementById('history-list').innerHTML = listHtml || '<p style="text-align:center;">기록이 없습니다.</p>';
         }
     </script>
 </body>
