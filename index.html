@@ -39,4 +39,172 @@
         #result-report { display: none; background: #27ae60; color: #ffffff; padding: 50px 20px; border-radius: 40px; text-align: center; }
         .report-item { font-size: 2.8rem; font-weight: bold; margin: 25px 0; border-bottom: 3px solid rgba(255,255,255,0.4); padding-bottom: 15px; }
     </style>
-</head
+</head>
+<body>
+
+    <div id="setup-area">
+        <div class="main-title">野郞 운동관리</div>
+        <div class="symbol-area">🏃‍♂️ ⛰️ 🚴</div>
+        <div class="select-container">
+            <span class="select-label">👟 운동 종류 선택</span>
+            <select id="workoutType">
+                <option value="3.5">🚶‍♂️ 걷기 (산책)</option>
+                <option value="7.0">🏃‍♂️ 달리기 (조깅)</option>
+                <option value="6.0">⛰️ 등산 (트레킹)</option>
+                <option value="8.0">🚴‍♂️ 자전거 (라이딩)</option>
+            </select>
+        </div>
+        <button type="button" class="btn btn-start" onclick="startWorkout()">▶ 운동 시작</button>
+        <button type="button" class="btn btn-history" onclick="toggleHistory(true)">📅 기록 확인</button>
+    </div>
+
+    <div id="active-area" style="display:none;">
+        <div id="map"></div>
+        <div class="dashboard">
+            <div class="card"><div class="card-label">시간</div><div id="timer" class="card-value">00:00</div></div>
+            <div class="card"><div class="card-label">거리(km)</div><div id="distance" class="card-value">0.00</div></div>
+            <div class="card"><div class="card-label">현재속도</div><div id="curSpeed" class="card-value" style="color:#e67e22;">0.0</div></div>
+            <div class="card"><div class="card-label">평균속도</div><div id="avgSpeed" class="card-value" style="color:#2980b9;">0.0</div></div>
+            <div class="card"><div class="card-label">칼로리</div><div id="calories" class="card-value">0</div></div>
+            <div class="card"><div class="card-label">상태</div><div id="status" class="card-value" style="font-size:2rem; color:#27ae60;">기록중</div></div>
+        </div>
+        
+        <button id="stopBtn" type="button" class="btn btn-stop" onclick="confirmStop()">■ 운동 종료</button>
+        
+        <div id="save-selection">
+            <button type="button" class="btn btn-save" onclick="saveAndShowResult()">💾 기록 저장</button>
+            <button type="button" class="btn btn-nosave" onclick="location.reload()">❌ 저장 안 함</button>
+        </div>
+    </div>
+
+    <div id="result-report">
+        <h1 style="font-size:4rem;">🏃‍♂️ 운동 완료!</h1>
+        <div id="report-content"></div>
+        <button type="button" class="btn" style="background:#2c3e50; color:white; margin-top:30px;" onclick="location.reload()">닫기</button>
+    </div>
+
+    <div id="history-overlay">
+        <h1 style="font-size:4rem; color:#2c3e50; text-align:center; border-bottom:8px solid #f1c40f; padding-bottom:20px;">📅 운동 기록</h1>
+        <div id="history-content"></div>
+        <button type="button" class="btn" style="background:#2c3e50; margin-top:30px;" onclick="toggleHistory(false)">돌아가기</button>
+    </div>
+
+    <script>
+        var map, marker, polyline, startTime, timerInterval, watchId;
+        var path = [], totalDistance = 0;
+
+        // 즉각적인 버튼 반응을 위해 맵 로딩과 UI 전환을 분리
+        function startWorkout() {
+            // UI부터 즉시 전환
+            document.getElementById('setup-area').style.display = 'none';
+            document.getElementById('active-area').style.display = 'block';
+            
+            startTime = new Date();
+            timerInterval = setInterval(updateTimer, 1000);
+
+            // 지도 로딩 (비동기 처리로 버튼 먹통 방지)
+            try {
+                var mapContainer = document.getElementById('map'); 
+                var mapOption = { center: new kakao.maps.LatLng(37.5668, 126.9786), level: 3 }; 
+                map = new kakao.maps.Map(mapContainer, mapOption); 
+                marker = new kakao.maps.Marker({ position: map.getCenter() }); 
+                marker.setMap(map); 
+                polyline = new kakao.maps.Polyline({ path: path, strokeWeight: 12, strokeColor: '#FF0000', strokeOpacity: 0.8 });
+                polyline.setMap(map);
+
+                if (navigator.geolocation) {
+                    watchId = navigator.geolocation.watchPosition(function(pos) {
+                        var lat = pos.coords.latitude, lon = pos.coords.longitude;
+                        var newPos = new kakao.maps.LatLng(lat, lon);
+                        path.push(newPos);
+                        polyline.setPath(path);
+                        if (path.length > 1) {
+                            var line = new kakao.maps.Polyline({ path: [path[path.length - 2], newPos] });
+                            totalDistance += line.getLength();
+                        }
+                        var km = (totalDistance / 1000).toFixed(2);
+                        document.getElementById('distance').innerText = km;
+                        var speed = pos.coords.speed;
+                        document.getElementById('curSpeed').innerText = (speed && speed > 0) ? (speed * 3.6).toFixed(1) : "0.0";
+                        var hours = (new Date() - startTime) / 3600000;
+                        document.getElementById('avgSpeed').innerText = (hours > 0) ? (km / hours).toFixed(1) : "0.0";
+                        var met = parseFloat(document.getElementById('workoutType').value);
+                        document.getElementById('calories').innerText = Math.round(met * 70 * hours);
+                        map.setCenter(newPos);
+                        marker.setPosition(newPos);
+                    }, function(e){ console.log("GPS 대기중..."); }, { enableHighAccuracy: true });
+                }
+            } catch(e) {
+                console.error("지도 로딩 실패, 하지만 기록은 계속됨", e);
+            }
+        }
+
+        function updateTimer() {
+            var diff = new Date(new Date() - startTime);
+            var m = String(diff.getUTCMinutes()).padStart(2, '0');
+            var s = String(diff.getUTCSeconds()).padStart(2, '0');
+            document.getElementById('timer').innerText = m + ":" + s;
+        }
+
+        function confirmStop() {
+            clearInterval(timerInterval);
+            if(watchId) navigator.geolocation.clearWatch(watchId);
+            document.getElementById('status').innerText = "정지";
+            document.getElementById('stopBtn').style.display = 'none';
+            document.getElementById('save-selection').style.display = 'flex';
+        }
+
+        function saveAndShowResult() {
+            const dist = document.getElementById('distance').innerText;
+            const avgS = document.getElementById('avgSpeed').innerText;
+            const time = document.getElementById('timer').innerText;
+            const kcal = document.getElementById('calories').innerText;
+            const type = document.getElementById('workoutType').options[document.getElementById('workoutType').selectedIndex].text;
+
+            let history = JSON.parse(localStorage.getItem('yarang_history') || "[]");
+            history.unshift({ id: Date.now(), date: new Date().toLocaleString(), type, dist, avgS, time, kcal });
+            localStorage.setItem('yarang_history', JSON.stringify(history.slice(0, 30)));
+
+            document.getElementById('active-area').style.display = 'none';
+            document.getElementById('report-content').innerHTML = `
+                <div class="report-item">🚶‍♂️ ${type}</div>
+                <div class="report-item">📏 ${dist} km / ⏱ ${time}</div>
+                <div class="report-item">🚀 평속 ${avgS} km/h / 🔥 ${kcal} kcal</div>
+            `;
+            document.getElementById('result-report').style.display = 'block';
+        }
+
+        function toggleHistory(show) {
+            if(show) {
+                renderHistory();
+                document.getElementById('history-overlay').style.display = 'block';
+            } else {
+                document.getElementById('history-overlay').style.display = 'none';
+            }
+        }
+
+        function renderHistory() {
+            let history = JSON.parse(localStorage.getItem('yarang_history') || "[]");
+            let listHtml = history.map(item => `
+                <div class="history-item">
+                    <button class="delete-btn" onclick="deleteHistory(${item.id})">삭제</button>
+                    <strong style="font-size:2.5rem; color:#2c3e50;">${item.date.split(' ')[0]} ${item.type}</strong><br>
+                    <div style="font-size:2rem; color:#636e72; margin-top:15px;">
+                        ${item.dist}km | ${item.time} | ${item.avgS}km/h | ${item.kcal}kcal
+                    </div>
+                </div>
+            `).join('');
+            document.getElementById('history-content').innerHTML = listHtml || '<p style="text-align:center; font-size:2.5rem;">기록이 없습니다.</p>';
+        }
+
+        function deleteHistory(id) {
+            if(confirm("기록을 삭제할까요?")) {
+                let history = JSON.parse(localStorage.getItem('yarang_history') || "[]");
+                history = history.filter(item => item.id !== id);
+                localStorage.setItem('yarang_history', JSON.stringify(history));
+                renderHistory();
+            }
+        }
+    </script>
+</body>
+</html>
