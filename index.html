@@ -2,53 +2,54 @@
 <html>
 <head>
     <meta charset="utf-8">
-    <title>野郞 운동관리 v3.4</title>
+    <title>野郞 운동관리 v3.5</title>
     <script type="text/javascript" src="https://dapi.kakao.com/v2/maps/sdk.js?appkey=271e6bea302e93a84488444c38490d7b&autoload=false"></script>
     <style>
-        /* 1. 바탕색을 순수 흰색으로 변경 */
         body { margin: 0; padding: 10px; font-family: 'Malgun Gothic', sans-serif; background: #ffffff; color: #333; }
         
+        /* 1. 제목 폰트 대폭 확대 */
         .main-title { 
-            text-align: center; font-size: 3rem; font-weight: 900; color: #2c3e50; 
-            padding: 20px 0; border-bottom: 5px solid #f1c40f; margin-bottom: 10px; 
-            letter-spacing: 5px;
+            text-align: center; font-size: 4.5rem; font-weight: 900; color: #2c3e50; 
+            padding: 30px 0 10px 0; border-bottom: 8px solid #f1c40f; margin-bottom: 5px; 
+            letter-spacing: 8px; text-shadow: 3px 3px 5px rgba(0,0,0,0.1);
         }
 
-        /* 중앙 심볼 영역: 빈 공간을 멋지게 채움 */
+        /* 2. 심볼 공간 확대 및 다중 심볼 배치 */
         .symbol-area {
-            text-align: center; padding: 40px 0; font-size: 10rem; 
-            color: #27ae60; text-shadow: 5px 5px 15px rgba(0,0,0,0.1);
+            text-align: center; padding: 50px 0; font-size: 8rem; 
+            letter-spacing: -15px; /* 심볼들이 모여 보이게 */
+            background: radial-gradient(circle, #f1f4f7 0%, #ffffff 70%);
+            margin-bottom: 20px;
         }
 
-        /* 운동 선택박스 컬러 강조 */
-        .select-container { 
-            background: #f1f4f7; padding: 25px; border-radius: 25px; 
-            margin-bottom: 20px; border: 2px solid #d1d8e0;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.05);
-        }
+        .select-container { background: #f8f9fa; padding: 25px; border-radius: 25px; margin-bottom: 25px; border: 3px solid #dfe6e9; }
         .select-label { font-size: 2.2rem; font-weight: bold; color: #2c3e50; display: block; margin-bottom: 15px; }
-        select { 
-            width: 100%; padding: 20px; font-size: 2.5rem; font-weight: bold; 
-            border-radius: 15px; border: 5px solid #27ae60; /* 강조 컬러 */
-            background: #ffffff; color: #27ae60; 
-        }
+        select { width: 100%; padding: 20px; font-size: 2.5rem; font-weight: bold; border-radius: 15px; border: 5px solid #27ae60; background: #ffffff; color: #27ae60; }
 
-        /* 대시보드 (운동 중 화면) */
-        .dashboard { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 15px; }
-        .card { background: #f8f9fa; padding: 20px 5px; border-radius: 20px; text-align: center; border: 2px solid #dee2e6; }
-        .card-label { font-size: 1.8rem; color: #636e72; margin-bottom: 10px; font-weight: bold; background: #dfe6e9; border-radius: 10px; }
+        /* 3. 지도 창 크기 확대 */
+        #map { width: 100%; height: 500px; border-radius: 30px; border: 6px solid #27ae60; margin-bottom: 25px; box-shadow: 0 10px 20px rgba(0,0,0,0.1); }
+
+        .dashboard { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px; }
+        .card { background: #f1f4f7; padding: 20px 5px; border-radius: 20px; text-align: center; border: 2px solid #ced6e0; }
+        .card-label { font-size: 1.8rem; color: #2f3542; margin-bottom: 10px; font-weight: bold; background: #dfe6e9; border-radius: 10px; }
         .card-value { font-size: 3rem; font-weight: bold; color: #2d3436; } 
 
-        #map { width: 100%; height: 350px; border-radius: 25px; border: 5px solid #27ae60; margin-bottom: 20px; }
-
-        /* 버튼 스타일 */
         .btn { width: 100%; padding: 30px; border: none; border-radius: 25px; font-size: 2.5rem; font-weight: bold; cursor: pointer; color: white; margin-bottom: 20px; }
         .btn-start { background: #27ae60; box-shadow: 0 10px #1e8449; }
         .btn-stop { background: #e74c3c; box-shadow: 0 10px #c0392b; }
         .btn-history { background: #3498db; box-shadow: 0 10px #2980b9; }
 
-        /* 결과/기록 창 */
+        /* 기록 리스트 및 삭제 버튼 */
         #history-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #ffffff; z-index: 999; padding: 20px; box-sizing: border-box; overflow-y: auto; }
+        .history-item { 
+            background: #f1f4f7; padding: 20px; border-radius: 20px; margin-bottom: 15px; 
+            border-left: 15px solid #27ae60; position: relative;
+        }
+        .delete-btn { 
+            position: absolute; top: 15px; right: 15px; background: #e74c3c; color: white; 
+            border: none; padding: 10px 20px; border-radius: 10px; font-size: 1.5rem; font-weight: bold;
+        }
+
         #result-report { display: none; background: #27ae60; color: #ffffff; padding: 40px 20px; border-radius: 35px; text-align: center; }
         .report-item { font-size: 2.5rem; font-weight: bold; margin: 20px 0; border-bottom: 2px solid rgba(255,255,255,0.3); padding-bottom: 10px; }
     </style>
@@ -58,7 +59,7 @@
     <div id="setup-area">
         <div class="main-title">野郞 운동관리</div>
         
-        <div class="symbol-area">🏃‍♂️</div>
+        <div class="symbol-area">🏃‍♂️⛰️🚴</div>
         
         <div class="select-container">
             <span class="select-label">👟 운동 종류 선택</span>
@@ -75,6 +76,8 @@
     </div>
 
     <div id="active-area" style="display:none;">
+        <div id="map"></div>
+
         <div class="dashboard">
             <div class="card"><div class="card-label">시간</div><div id="timer" class="card-value">00:00</div></div>
             <div class="card"><div class="card-label">거리(km)</div><div id="distance" class="card-value">0.00</div></div>
@@ -84,121 +87,20 @@
             <div class="card"><div class="card-label">상태</div><div id="status" class="card-value" style="font-size:1.8rem; color:#27ae60;">기록중</div></div>
         </div>
         
-        <div id="map"></div>
-        
         <button class="btn btn-stop" onclick="stopWorkout()">■ 운동 종료</button>
     </div>
 
     <div id="result-report">
         <h1 style="font-size:3.5rem;">👍 오늘 운동 완료!</h1>
         <div id="report-content"></div>
-        <button class="btn" style="background:#2c3e50; color:white; margin-top:30px;" onclick="location.reload()">닫기</button>
+        <button class="btn" style="background:#2c3e50; color:white; margin-top:30px;" onclick="location.reload()">확인</button>
     </div>
 
     <div id="history-overlay">
-        <h1 style="font-size:3rem; color:#2c3e50; text-align:center; border-bottom:3px solid #f1c40f; padding-bottom:10px;">📅 과거 운동 기록</h1>
+        <h1 style="font-size:3rem; color:#2c3e50; text-align:center; border-bottom:5px solid #f1c40f; padding-bottom:15px;">📅 과거 운동 기록</h1>
         <div id="history-content"></div>
-        <button class="btn" style="background:#e74c3c; margin-top:30px;" onclick="toggleHistory(false)">닫기</button>
+        <button class="btn" style="background:#2c3e50; margin-top:30px;" onclick="toggleHistory(false)">돌아가기</button>
     </div>
 
     <script>
-        var map, marker, polyline, startTime, timerInterval, watchId;
-        var path = [], totalDistance = 0;
-
-        function startWorkout() {
-            document.getElementById('setup-area').style.display = 'none';
-            document.getElementById('active-area').style.display = 'block';
-            startTime = new Date();
-            timerInterval = setInterval(updateTimer, 1000);
-
-            kakao.maps.load(function() {
-                var mapContainer = document.getElementById('map'); 
-                var mapOption = { center: new kakao.maps.LatLng(37.5668, 126.9786), level: 3 }; 
-                map = new kakao.maps.Map(mapContainer, mapOption); 
-                marker = new kakao.maps.Marker({ position: map.getCenter() }); 
-                marker.setMap(map); 
-                polyline = new kakao.maps.Polyline({ path: path, strokeWeight: 12, strokeColor: '#FF0000', strokeOpacity: 0.8 });
-                polyline.setMap(map);
-
-                if (navigator.geolocation) {
-                    watchId = navigator.geolocation.watchPosition(function(pos) {
-                        var lat = pos.coords.latitude, lon = pos.coords.longitude;
-                        var newPos = new kakao.maps.LatLng(lat, lon);
-                        path.push(newPos);
-                        polyline.setPath(path);
-
-                        if (path.length > 1) {
-                            var line = new kakao.maps.Polyline({ path: [path[path.length - 2], newPos] });
-                            totalDistance += line.getLength();
-                        }
-
-                        var km = (totalDistance / 1000).toFixed(2);
-                        document.getElementById('distance').innerText = km;
-
-                        var speed = pos.coords.speed;
-                        document.getElementById('curSpeed').innerText = (speed && speed > 0) ? (speed * 3.6).toFixed(1) : "0.0";
-
-                        var hours = (new Date() - startTime) / 3600000;
-                        document.getElementById('avgSpeed').innerText = (hours > 0) ? (km / hours).toFixed(1) : "0.0";
-
-                        var met = parseFloat(document.getElementById('workoutType').value);
-                        document.getElementById('calories').innerText = Math.round(met * 70 * hours);
-
-                        map.setCenter(newPos);
-                        marker.setPosition(newPos);
-                    }, null, { enableHighAccuracy: true });
-                }
-            });
-        }
-
-        function updateTimer() {
-            var diff = new Date(new Date() - startTime);
-            var m = String(diff.getUTCMinutes()).padStart(2, '0');
-            var s = String(diff.getUTCSeconds()).padStart(2, '0');
-            document.getElementById('timer').innerText = m + ":" + s;
-        }
-
-        function stopWorkout() {
-            clearInterval(timerInterval);
-            navigator.geolocation.clearWatch(watchId);
-            const dist = document.getElementById('distance').innerText;
-            const avgS = document.getElementById('avgSpeed').innerText;
-            const time = document.getElementById('timer').innerText;
-            const kcal = document.getElementById('calories').innerText;
-            const type = document.getElementById('workoutType').options[document.getElementById('workoutType').selectedIndex].text;
-
-            let history = JSON.parse(localStorage.getItem('yarang_history') || "[]");
-            history.unshift({ date: new Date().toLocaleString(), type, dist, avgS, time, kcal });
-            localStorage.setItem('yarang_history', JSON.stringify(history.slice(0, 20)));
-
-            document.getElementById('active-area').style.display = 'none';
-            document.getElementById('report-content').innerHTML = `
-                <div class="report-item">🚶‍♂️ 운동종류: ${type}</div>
-                <div class="report-item">📏 이동거리: ${dist} km</div>
-                <div class="report-item">⏱ 운동시간: ${time}</div>
-                <div class="report-item">🚀 평균속도: ${avgS} km/h</div>
-                <div class="report-item">🔥 칼로리: ${kcal} kcal</div>
-            `;
-            document.getElementById('result-report').style.display = 'block';
-        }
-
-        function toggleHistory(show) {
-            if(show) {
-                let history = JSON.parse(localStorage.getItem('yarang_history') || "[]");
-                let listHtml = history.map(item => `
-                    <div style="background:#f1f4f7; padding:20px; border-radius:20px; margin-bottom:15px; border-left:12px solid #27ae60;">
-                        <strong style="font-size:1.8rem; color:#2c3e50;">${item.date.split(' ')[0]} ${item.type}</strong><br>
-                        <div style="font-size:1.5rem; color:#636e72; margin-top:10px;">
-                            ${item.dist}km | ${item.time} | ${item.avgS}km/h | ${item.kcal}kcal
-                        </div>
-                    </div>
-                `).join('');
-                document.getElementById('history-content').innerHTML = listHtml || '<p style="text-align:center;">기록이 없습니다.</p>';
-                document.getElementById('history-overlay').style.display = 'block';
-            } else {
-                document.getElementById('history-overlay').style.display = 'none';
-            }
-        }
-    </script>
-</body>
-</html>
+        var map, marker, polyline, startTime
