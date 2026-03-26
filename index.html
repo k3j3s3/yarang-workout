@@ -2,87 +2,86 @@
 <html>
 <head>
     <meta charset="utf-8">
-    <title>野郞 운동관리</title>
+    <title>野郞 운동관리 - 경로 추적</title>
     <script type="text/javascript" src="https://dapi.kakao.com/v2/maps/sdk.js?appkey=271e6bea302e93a84488444c38490d7b&autoload=false"></script>
     <style>
-        body { margin: 0; padding: 15px; font-family: 'Malgun Gothic', sans-serif; background: #f0f3f5; }
-        #map { width: 100%; height: 500px; border-radius: 20px; border: 3px solid #2c3e50; margin-top: 15px; box-shadow: 0 10px 20px rgba(0,0,0,0.2); }
-        .btn-start { 
-            width: 100%; padding: 18px; background: #27ae60; color: white; border: none; 
-            border-radius: 12px; font-size: 1.3em; font-weight: bold; cursor: pointer;
-            box-shadow: 0 4px 0 #1e8449; active { transform: translateY(2px); box-shadow: none; }
-        }
-        .status-panel { 
-            padding: 20px; background: white; margin-top: 15px; border-radius: 15px; 
-            box-shadow: 0 2px 10px rgba(0,0,0,0.05); border-left: 8px solid #3498db;
-        }
-        .info-row { font-size: 1.1em; margin: 5px 0; }
-        .label { color: #7f8c8d; width: 50px; display: inline-block; }
+        body { margin: 0; padding: 15px; font-family: sans-serif; background: #f8f9fa; }
+        #map { width: 100%; height: 450px; border-radius: 15px; border: 2px solid #2c3e50; margin-top: 10px; }
+        .btn-start { width: 100%; padding: 15px; background: #27ae60; color: white; border: none; border-radius: 10px; font-size: 1.2em; font-weight: bold; cursor: pointer; }
+        .status-panel { padding: 15px; background: white; margin-top: 10px; border-radius: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); line-height: 1.6; }
+        .highlight { color: #e74c3c; font-size: 1.2em; }
     </style>
 </head>
 <body>
 
-    <button class="btn-start" onclick="initMap()">🏃‍♂️ 야랑 운동 시작 (위치 찾기)</button>
+    <button class="btn-start" onclick="initMap()">🏃‍♂️ 야랑 운동 시작 (경로 기록)</button>
 
     <div class="status-panel">
-        <div class="info-row">📡 <b>상태:</b> <span id="status" style="color:#e67e22;">버튼을 눌러주세요</span></div>
-        <hr style="border: 0; border-top: 1px solid #eee; margin: 10px 0;">
-        <div class="info-row"><span class="label">위도:</span> <span id="lat" style="font-family: monospace;">-</span></div>
-        <div class="info-row"><span class="label">경도:</span> <span id="lng" style="font-family: monospace;">-</span></div>
+        📡 <b>상태:</b> <span id="status">버튼을 눌러주세요</span><br>
+        📏 <b>총 이동 거리:</b> <span id="distance" class="highlight">0.00</span> km<br>
+        📍 <b>현재 좌표:</b> <span id="lat">-</span>, <span id="lng">-</span>
     </div>
 
     <div id="map"></div>
 
     <script>
+        var map, marker, polyline;
+        var path = []; // 이동 경로 좌표를 담을 배열
+        var totalDistance = 0; // 총 누적 거리
+
         function initMap() {
             document.getElementById('status').innerText = "지도 로딩 중...";
             
-            // 카카오 지도 엔진을 안전하게 불러옵니다.
             kakao.maps.load(function() {
                 var mapContainer = document.getElementById('map'); 
-                var mapOption = { 
-                    center: new kakao.maps.LatLng(37.56682, 126.9786), // 초기 위치 (서울)
-                    level: 3 
-                }; 
-
-                var map = new kakao.maps.Map(mapContainer, mapOption); 
-                var marker = new kakao.maps.Marker({ position: map.getCenter() }); 
+                var mapOption = { center: new kakao.maps.LatLng(37.5668, 126.9786), level: 3 }; 
+                map = new kakao.maps.Map(mapContainer, mapOption); 
+                marker = new kakao.maps.Marker({ position: map.getCenter() }); 
                 marker.setMap(map); 
 
-                // GPS 추적 시작
+                // 이동 경로를 그릴 선(Polyline) 설정
+                polyline = new kakao.maps.Polyline({
+                    path: path, // 좌표 배열
+                    strokeWeight: 5, // 선의 두께
+                    strokeColor: '#FF0000', // 선의 색깔 (빨강)
+                    strokeOpacity: 0.8, // 선의 투명도
+                    strokeStyle: 'solid' // 선의 스타일
+                });
+                polyline.setMap(map);
+
                 if (navigator.geolocation) {
-                    document.getElementById('status').innerText = "현재 위치 찾는 중... (허용을 눌러주세요)";
-                    
+                    document.getElementById('status').innerText = "위치 추적 중...";
                     navigator.geolocation.watchPosition(function(pos) {
                         var lat = pos.coords.latitude;
                         var lon = pos.coords.longitude;
-                        var locPosition = new kakao.maps.LatLng(lat, lon);
+                        var newPos = new kakao.maps.LatLng(lat, lon);
                         
-                        // 화면 숫자 업데이트
+                        // 1. 경로 배열에 새 좌표 추가
+                        path.push(newPos);
+                        
+                        // 2. 선 업데이트
+                        polyline.setPath(path);
+
+                        // 3. 거리 계산 (이전 좌표가 있을 때만)
+                        if (path.length > 1) {
+                            var prevPos = path[path.length - 2];
+                            var line = new kakao.maps.Polyline({
+                                path: [prevPos, newPos]
+                            });
+                            totalDistance += line.getLength(); // 미터 단위 거리 합산
+                        }
+
+                        // 4. 화면 업데이트
                         document.getElementById('lat').innerText = lat.toFixed(5);
                         document.getElementById('lng').innerText = lon.toFixed(5);
-                        document.getElementById('status').innerText = "수신 양호 (정상 작동 중)";
-                        document.getElementById('status').style.color = "#27ae60";
+                        document.getElementById('distance').innerText = (totalDistance / 1000).toFixed(2); // km로 변환
+                        document.getElementById('status').innerText = "정상 작동 중";
                         
-                        // 지도와 마커 이동
-                        map.setCenter(locPosition);
-                        marker.setPosition(locPosition);
-                        
+                        map.setCenter(newPos);
+                        marker.setPosition(newPos);
                     }, function(err) {
-                        var errorMsg = "실패: ";
-                        if(err.code == 1) errorMsg += "위치 권한 거부됨";
-                        else if(err.code == 2) errorMsg += "신호 약함";
-                        else errorMsg += err.message;
-                        
-                        document.getElementById('status').innerText = errorMsg;
-                        document.getElementById('status').style.color = "#c0392b";
-                    }, { 
-                        enableHighAccuracy: true, // 고정밀 GPS 사용
-                        maximumAge: 0, 
-                        timeout: 20000 
-                    });
-                } else {
-                    alert("이 브라우저는 위치 정보를 지원하지 않습니다.");
+                        document.getElementById('status').innerText = "오류: " + err.message;
+                    }, { enableHighAccuracy: true, timeout: 10000 });
                 }
             });
         }
