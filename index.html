@@ -2,37 +2,38 @@
 <html>
 <head>
     <meta charset="utf-8">
-    <title>野郞 운동관리 v2.1</title>
+    <title>野郞 운동관리 v2.2</title>
     <script type="text/javascript" src="https://dapi.kakao.com/v2/maps/sdk.js?appkey=271e6bea302e93a84488444c38490d7b&autoload=false"></script>
     <style>
-        /* 휴대폰 화면 최적화 및 글씨 크기 대폭 확대 */
-        body { margin: 0; padding: 10px; font-family: 'Malgun Gothic', sans-serif; background: #2c3e50; color: white; }
+        /* 모든 폰트 크기 대폭 확대 및 배경 최적화 */
+        body { margin: 0; padding: 10px; font-family: 'Malgun Gothic', sans-serif; background: #1a1a1a; color: white; }
         
-        /* 대시보드: 글씨를 아주 크게 설정 */
-        .dashboard { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 10px; }
-        .card { background: #34495e; padding: 15px; border-radius: 15px; text-align: center; border: 1px solid #455a64; }
-        .card-label { font-size: 1.1rem; color: #bdc3c7; margin-bottom: 5px; }
-        .card-value { font-size: 1.8rem; font-weight: bold; color: #f1c40f; } /* 노란색으로 강조 */
+        /* 상단 대시보드: 글씨 크기 극대화 */
+        .dashboard { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 15px; }
+        .card { background: #2c3e50; padding: 20px; border-radius: 20px; text-align: center; border: 2px solid #34495e; }
+        .card-label { font-size: 1.4rem; color: #bdc3c7; margin-bottom: 8px; font-weight: bold; }
+        .card-value { font-size: 2.5rem; font-weight: bold; color: #f1c40f; } /* 노란색 왕글씨 */
         
-        #map { width: 100%; height: 350px; border-radius: 15px; border: 2px solid #ecf0f1; }
+        /* 지도 영역 */
+        #map { width: 100%; height: 300px; border-radius: 20px; border: 3px solid #f1c40f; }
 
-        /* 버튼: 손가락으로 누르기 좋게 크고 두껍게 */
-        .btn-group { display: flex; gap: 10px; margin-top: 10px; }
-        .btn { flex: 1; padding: 20px; border: none; border-radius: 12px; font-size: 1.5rem; font-weight: bold; cursor: pointer; color: white; }
-        .btn-start { background: #27ae60; box-shadow: 0 5px #1e8449; }
-        .btn-stop { background: #e74c3c; box-shadow: 0 5px #c0392b; display: none; }
+        /* 버튼: 더 크고 누르기 쉽게 */
+        .btn-group { display: flex; gap: 15px; margin-top: 15px; }
+        .btn { flex: 1; padding: 25px; border: none; border-radius: 15px; font-size: 1.8rem; font-weight: bold; cursor: pointer; color: white; }
+        .btn-start { background: #27ae60; box-shadow: 0 6px #1e8449; }
+        .btn-stop { background: #e74c3c; box-shadow: 0 6px #c0392b; display: none; }
         
-        /* 하단 상태 표시 */
-        #status-bar { margin-top: 10px; text-align: center; font-size: 1rem; color: #ecf0f1; background: rgba(0,0,0,0.3); padding: 5px; border-radius: 5px; }
+        /* 하단 상태바 */
+        #status-bar { margin-top: 15px; text-align: center; font-size: 1.2rem; color: #95a5a6; }
     </style>
 </head>
 <body>
 
     <div class="dashboard">
-        <div class="card"><div class="card-label">운동시간</div><div id="timer" class="card-value">00:00</div></div>
+        <div class="card"><div class="card-label">시간</div><div id="timer" class="card-value">00:00</div></div>
         <div class="card"><div class="card-label">거리(km)</div><div id="distance" class="card-value">0.00</div></div>
         <div class="card"><div class="card-label">칼로리</div><div id="calories" class="card-value">0</div></div>
-        <div class="card"><div class="card-label">현재상태</div><div id="status" class="card-value" style="font-size:1.2rem;">대기</div></div>
+        <div class="card"><div class="card-label">상태</div><div id="status" class="card-value" style="font-size:1.5rem;">대기</div></div>
     </div>
 
     <div id="map"></div>
@@ -42,7 +43,7 @@
         <button id="stopBtn" class="btn btn-stop" onclick="stopWorkout()">■ 운동 종료</button>
     </div>
 
-    <div id="status-bar">📡 좌표: <span id="lat">-</span>, <span id="lng">-</span></div>
+    <div id="status-bar">📡 수신중: <span id="lat">-</span>, <span id="lng">-</span></div>
 
     <script>
         var map, marker, polyline, startTime, timerInterval, watchId;
@@ -63,7 +64,7 @@
                 map = new kakao.maps.Map(mapContainer, mapOption); 
                 marker = new kakao.maps.Marker({ position: map.getCenter() }); 
                 marker.setMap(map); 
-                polyline = new kakao.maps.Polyline({ path: path, strokeWeight: 6, strokeColor: '#FF0000', strokeOpacity: 0.8 });
+                polyline = new kakao.maps.Polyline({ path: path, strokeWeight: 8, strokeColor: '#FF0000', strokeOpacity: 0.8 });
                 polyline.setMap(map);
 
                 if (navigator.geolocation) {
@@ -102,20 +103,19 @@
             clearInterval(timerInterval);
             navigator.geolocation.clearWatch(watchId);
             
-            const record = {
-                date: new Date().toLocaleString(),
-                dist: document.getElementById('distance').innerText,
-                time: document.getElementById('timer').innerText,
-                kcal: document.getElementById('calories').innerText
-            };
+            const dist = document.getElementById('distance').innerText;
+            const time = document.getElementById('timer').innerText;
+            const kcal = document.getElementById('calories').innerText;
 
-            // 데이터 저장 (localStorage)
+            // 데이터 저장
             let history = JSON.parse(localStorage.getItem('yarang_history') || "[]");
-            history.unshift(record); // 최신 기록을 맨 앞으로
+            history.unshift({ date: new Date().toLocaleString(), dist, time, kcal });
             localStorage.setItem('yarang_history', JSON.stringify(history));
 
-            alert("고생하셨습니다, 형님!\n\n기록이 저장되었습니다.\n거리: " + record.dist + "km\n칼로리: " + record.kcal + "kcal");
-            location.reload(); // 화면 초기화
+            // 형님 요청대로 핵심 내용만 팝업창에 표시
+            alert("기록이 저장되었습니다.\n\n거리: " + dist + "km\n칼로리: " + kcal + "kcal\n시간: " + time);
+            
+            location.reload(); 
         }
     </script>
 </body>
