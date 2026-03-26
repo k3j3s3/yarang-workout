@@ -1,80 +1,70 @@
 <!DOCTYPE html>
-<html>
-<head>
-    <meta charset="utf-8">
-    <title>野郞 운동관리 - 지도 테스트</title>
-    <script type="text/javascript" src="https://dapi.kakao.com/v2/maps/sdk.js?appkey=6abfda3c10053ca5baa728cd01a41803&autoload=false"></script>
-    <style>
-        body { margin: 0; padding: 20px; font-family: sans-serif; background-color: #f4f7f6; }
-        #map { width: 100%; height: 500px; border-radius: 15px; border: 3px solid #2c3e50; box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
-        .status-panel { 
-            padding: 20px; background: #ffffff; margin-bottom: 15px; 
-            border-radius: 12px; border-left: 5px solid #e74c3c; font-size: 1.1em;
-        }
-        .info-text { color: #7f8c8d; font-size: 0.9em; margin-top: 5px; }
-    </style>
-</head>
-<body>
 
-    <div class="status-panel">
-        📡 <b>현재 상태:</b> <span id="status" style="color:#e67e22;">지도 데이터를 불러오는 중...</span><br>
-        📍 <b>위도:</b> <span id="lat">-</span> | <b>경도:</b> <span id="lng">-</span>
-        <div class="info-text">※ 지도가 안 나오면 '위치 권한' 허용을 확인해 주세요.</div>
-    </div>
+<div id="map"></div>
 
-    <div id="map"></div>
+<script>
 
-    <script>
-        // 카카오 지도 라이브러리가 로드될 때까지 기다린 후 실행
-        kakao.maps.load(function() {
-            var mapContainer = document.getElementById('map'); 
-            var mapOption = { 
-                center: new kakao.maps.LatLng(37.566826, 126.9786567), // 기본 위치 (서울시청)
-                level: 3 
-            }; 
+// 지도 기본 설정
+var mapContainer = document.getElementById('map');
+var mapOption = {
+    center: new kakao.maps.LatLng(37.566826, 126.9786567),
+    level: 3
+};
 
-            // 지도 생성
-            var map = new kakao.maps.Map(mapContainer, mapOption); 
-            var marker = new kakao.maps.Marker({ position: map.getCenter() }); 
-            marker.setMap(map); 
+var map = new kakao.maps.Map(mapContainer, mapOption);
 
-            document.getElementById('status').innerText = "GPS 신호를 기다리는 중...";
-            document.getElementById('status').style.color = "#2980b9";
+// 마커 생성
+var marker = new kakao.maps.Marker({
+    position: map.getCenter()
+});
+marker.setMap(map);
 
-            // 실시간 위치 추적 (브라우저 GPS 사용)
-            if (navigator.geolocation) {
-                navigator.geolocation.watchPosition(function(position) {
-                    var lat = position.coords.latitude; 
-                    var lon = position.coords.longitude; 
-                    var locPosition = new kakao.maps.LatLng(lat, lon);
-                    
-                    // 화면 정보 업데이트
-                    document.getElementById('lat').innerText = lat.toFixed(5);
-                    document.getElementById('lng').innerText = lon.toFixed(5);
-                    document.getElementById('status').innerText = "정상 작동 중 (실시간 추적)";
-                    document.getElementById('status').style.color = "#27ae60";
+// 상태 업데이트
+var statusEl = document.getElementById('status');
+var latEl = document.getElementById('lat');
+var lngEl = document.getElementById('lng');
 
-                    // 지도 중심 이동 및 마커 위치 변경
-                    map.setCenter(locPosition);
-                    marker.setPosition(locPosition);
-                    
-                }, function(error) {
-                    var msg = "GPS 연결 실패: ";
-                    if(error.code == 1) msg += "사용자가 위치 권한을 거절했습니다.";
-                    else if(error.code == 2) msg += "위치 확인 불가 (GPS 신호 약함)";
-                    else msg += error.message;
-                    
-                    document.getElementById('status').innerText = msg;
-                    document.getElementById('status').style.color = "#c0392b";
-                }, {
-                    enableHighAccuracy: true,
-                    maximumAge: 0,
-                    timeout: 10000
-                });
-            } else {
-                alert("이 브라우저는 GPS를 지원하지 않습니다.");
-            }
-        });
-    </script>
+statusEl.innerText = "GPS 대기 중...";
+
+// GPS 기능
+if (navigator.geolocation) {
+
+    // 최초 위치
+    navigator.geolocation.getCurrentPosition(function(position) {
+        updatePosition(position);
+    });
+
+    // 실시간 추적
+    navigator.geolocation.watchPosition(function(position) {
+        updatePosition(position);
+    }, function(error) {
+        statusEl.innerText = "GPS 오류: " + error.message;
+    }, {
+        enableHighAccuracy: true,
+        maximumAge: 0,
+        timeout: 10000
+    });
+
+} else {
+    alert("이 브라우저는 GPS를 지원하지 않습니다.");
+}
+
+// 위치 업데이트 함수
+function updatePosition(position) {
+    var lat = position.coords.latitude;
+    var lng = position.coords.longitude;
+
+    var locPosition = new kakao.maps.LatLng(lat, lng);
+
+    latEl.innerText = lat.toFixed(5);
+    lngEl.innerText = lng.toFixed(5);
+    statusEl.innerText = "실시간 추적 중";
+
+    map.setCenter(locPosition);
+    marker.setPosition(locPosition);
+}
+
+</script>
+
 </body>
 </html>
