@@ -191,6 +191,9 @@
             // (기존 기록 확인 로직 생략, v4.2와 동일하게 작동)
             alert("기록 확인 기능은 v4.2와 동일하게 작동합니다.");
         }
+         if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('/service-worker.js');
+       }
     </script>
 </body>
 </html>
