@@ -2,7 +2,7 @@
 <html>
 <head>
     <meta charset="utf-8">
-    <title>野郞 운동관리 v3.7</title>
+    <title>野郞 운동관리 v3.8</title>
     <script type="text/javascript" src="https://dapi.kakao.com/v2/maps/sdk.js?appkey=271e6bea302e93a84488444c38490d7b&libraries=services"></script>
     <style>
         body { margin: 0; padding: 15px; font-family: 'Malgun Gothic', sans-serif; background: #ffffff; color: #333; overflow-x: hidden; }
@@ -11,86 +11,32 @@
         .select-container { background: #f1f4f7; padding: 30px; border-radius: 30px; margin-bottom: 30px; border: 3px solid #dfe6e9; }
         .select-label { font-size: 2.5rem; font-weight: bold; color: #2c3e50; display: block; margin-bottom: 20px; }
         select { width: 100%; padding: 25px; font-size: 2.8rem; font-weight: bold; border-radius: 20px; border: 6px solid #27ae60; background: #ffffff; color: #27ae60; }
-        #map { width: 100%; height: 500px; border-radius: 35px; border: 8px solid #27ae60; margin-bottom: 25px; box-shadow: 0 15px 30px rgba(0,0,0,0.15); }
+        
+        /* 지도 및 대시보드 */
+        #map { width: 100%; height: 500px; border-radius: 35px; border: 8px solid #27ae60; margin-bottom: 25px; display: block; background: #eee; }
         .dashboard { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 25px; }
         .card { background: #f8f9fa; padding: 25px 5px; border-radius: 25px; text-align: center; border: 2px solid #ced6e0; }
         .card-label { font-size: 2rem; color: #2f3542; margin-bottom: 15px; font-weight: bold; background: #dfe6e9; border-radius: 12px; }
         .card-value { font-size: 3.5rem; font-weight: bold; color: #2d3436; } 
-        .btn { width: 100%; padding: 35px; border: none; border-radius: 30px; font-size: 2.8rem; font-weight: bold; cursor: pointer; color: white; margin-bottom: 25px; display: block; }
-        .btn-start { background: #27ae60; box-shadow: 0 12px #1e8449; }
-        .btn-stop { background: #e74c3c; box-shadow: 0 12px #c0392b; }
-        .btn-history { background: #3498db; box-shadow: 0 12px #2980b9; }
-        
-        /* 추가된 저장 선택 버튼 스타일 */
-        #save-selection { display: none; gap: 15px; margin-bottom: 25px; }
-        .btn-save { background: #2ecc71; flex: 1; padding: 30px; font-size: 2.2rem; }
-        .btn-nosave { background: #95a5a6; flex: 1; padding: 30px; font-size: 2.2rem; }
 
-        #history-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #ffffff; z-index: 1000; padding: 30px; box-sizing: border-box; overflow-y: auto; }
+        /* 버튼 시리즈 */
+        .btn { width: 100%; padding: 35px; border: none; border-radius: 30px; font-size: 2.8rem; font-weight: bold; cursor: pointer; color: white; margin-bottom: 25px; display: block; -webkit-appearance: none; }
+        .btn-start { background: #27ae60; box-shadow: 0 12px #1e8449; }
+        .btn-history { background: #3498db; box-shadow: 0 12px #2980b9; }
+        .btn-stop { background: #e74c3c; box-shadow: 0 12px #c0392b; }
+        
+        /* 저장 선택 영역 */
+        #save-selection { display: none; gap: 15px; margin-bottom: 25px; width: 100%; }
+        .btn-save { background: #2ecc71; flex: 1; margin-bottom: 0; }
+        .btn-nosave { background: #95a5a6; flex: 1; margin-bottom: 0; }
+
+        /* 기록 레이어 */
+        #history-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #ffffff; z-index: 9999; padding: 30px; box-sizing: border-box; overflow-y: auto; }
         .history-item { background: #f1f4f7; padding: 30px; border-radius: 25px; margin-bottom: 20px; border-left: 20px solid #27ae60; position: relative; }
         .delete-btn { position: absolute; top: 25px; right: 25px; background: #e74c3c; color: white; border: none; padding: 15px 25px; border-radius: 15px; font-size: 1.8rem; font-weight: bold; }
-        #result-report { display: none; background: #27ae60; color: #ffffff; padding: 50px 20px; border-radius: 40px; text-align: center; margin-top: 20px; }
+
+        /* 결과 레이어 */
+        #result-report { display: none; background: #27ae60; color: #ffffff; padding: 50px 20px; border-radius: 40px; text-align: center; }
         .report-item { font-size: 2.8rem; font-weight: bold; margin: 25px 0; border-bottom: 3px solid rgba(255,255,255,0.4); padding-bottom: 15px; }
     </style>
-</head>
-<body>
-
-    <div id="setup-area">
-        <div class="main-title">野郞 운동관리</div>
-        <div class="symbol-area">🏃‍♂️ ⛰️ 🚴</div>
-        <div class="select-container">
-            <span class="select-label">👟 운동 종류 선택</span>
-            <select id="workoutType">
-                <option value="3.5">🚶‍♂️ 걷기 (산책)</option>
-                <option value="7.0">🏃‍♂️ 달리기 (조깅)</option>
-                <option value="6.0">⛰️ 등산 (트레킹)</option>
-                <option value="8.0">🚴‍♂️ 자전거 (라이딩)</option>
-            </select>
-        </div>
-        <button class="btn btn-start" onclick="startWorkout()">▶ 운동 시작</button>
-        <button class="btn btn-history" onclick="toggleHistory(true)">📅 기록 확인</button>
-    </div>
-
-    <div id="active-area" style="display:none;">
-        <div id="map"></div>
-        <div class="dashboard">
-            <div class="card"><div class="card-label">시간</div><div id="timer" class="card-value">00:00</div></div>
-            <div class="card"><div class="card-label">거리(km)</div><div id="distance" class="card-value">0.00</div></div>
-            <div class="card"><div class="card-label">현재속도</div><div id="curSpeed" class="card-value" style="color:#e67e22;">0.0</div></div>
-            <div class="card"><div class="card-label">평균속도</div><div id="avgSpeed" class="card-value" style="color:#2980b9;">0.0</div></div>
-            <div class="card"><div class="card-label">칼로리</div><div id="calories" class="card-value">0</div></div>
-            <div class="card"><div class="card-label">상태</div><div id="status" class="card-value" style="font-size:2rem; color:#27ae60;">기록중</div></div>
-        </div>
-        
-        <button id="stopBtn" class="btn btn-stop" onclick="confirmStop()">■ 운동 종료</button>
-        
-        <div id="save-selection">
-            <button class="btn btn-save" onclick="saveAndShowResult()">💾 기록 저장</button>
-            <button class="btn btn-nosave" onclick="location.reload()">❌ 저장 안 함</button>
-        </div>
-    </div>
-
-    <div id="result-report">
-        <h1 style="font-size:4rem;">🏃‍♂️ 운동 완료!</h1>
-        <div id="report-content"></div>
-        <button class="btn" style="background:#2c3e50; color:white; margin-top:30px;" onclick="location.reload()">확인</button>
-    </div>
-
-    <div id="history-overlay">
-        <h1 style="font-size:4rem; color:#2c3e50; text-align:center; border-bottom:8px solid #f1c40f; padding-bottom:20px;">📅 운동 기록</h1>
-        <div id="history-content"></div>
-        <button class="btn" style="background:#2c3e50; margin-top:30px;" onclick="toggleHistory(false)">돌아가기</button>
-    </div>
-
-    <script>
-        var map, marker, polyline, startTime, timerInterval, watchId;
-        var path = [], totalDistance = 0;
-
-        function startWorkout() {
-            document.getElementById('setup-area').style.display = 'none';
-            document.getElementById('active-area').style.display = 'block';
-            startTime = new Date();
-            timerInterval = setInterval(updateTimer, 1000);
-
-            var mapContainer = document.getElementById('map'); 
-            var map
+</head
