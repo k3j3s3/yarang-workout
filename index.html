@@ -1,70 +1,29 @@
-<!DOCTYPE html>
-
-<div id="map"></div>
-
 <script>
+window.onload = function () {
 
-// 지도 기본 설정
-var mapContainer = document.getElementById('map');
-var mapOption = {
-    center: new kakao.maps.LatLng(37.566826, 126.9786567),
-    level: 3
+    var script = document.createElement("script");
+    script.src = "https://dapi.kakao.com/v2/maps/sdk.js?appkey=6abfda3c10053ca5baa728cd01a41803&autoload=false";
+    
+    script.onload = function () {
+        kakao.maps.load(function () {
+
+            var mapContainer = document.getElementById('map');
+            var mapOption = {
+                center: new kakao.maps.LatLng(37.566826, 126.9786567),
+                level: 3
+            };
+
+            var map = new kakao.maps.Map(mapContainer, mapOption);
+
+            var marker = new kakao.maps.Marker({
+                position: map.getCenter()
+            });
+
+            marker.setMap(map);
+
+        });
+    };
+
+    document.head.appendChild(script);
 };
-
-var map = new kakao.maps.Map(mapContainer, mapOption);
-
-// 마커 생성
-var marker = new kakao.maps.Marker({
-    position: map.getCenter()
-});
-marker.setMap(map);
-
-// 상태 업데이트
-var statusEl = document.getElementById('status');
-var latEl = document.getElementById('lat');
-var lngEl = document.getElementById('lng');
-
-statusEl.innerText = "GPS 대기 중...";
-
-// GPS 기능
-if (navigator.geolocation) {
-
-    // 최초 위치
-    navigator.geolocation.getCurrentPosition(function(position) {
-        updatePosition(position);
-    });
-
-    // 실시간 추적
-    navigator.geolocation.watchPosition(function(position) {
-        updatePosition(position);
-    }, function(error) {
-        statusEl.innerText = "GPS 오류: " + error.message;
-    }, {
-        enableHighAccuracy: true,
-        maximumAge: 0,
-        timeout: 10000
-    });
-
-} else {
-    alert("이 브라우저는 GPS를 지원하지 않습니다.");
-}
-
-// 위치 업데이트 함수
-function updatePosition(position) {
-    var lat = position.coords.latitude;
-    var lng = position.coords.longitude;
-
-    var locPosition = new kakao.maps.LatLng(lat, lng);
-
-    latEl.innerText = lat.toFixed(5);
-    lngEl.innerText = lng.toFixed(5);
-    statusEl.innerText = "실시간 추적 중";
-
-    map.setCenter(locPosition);
-    marker.setPosition(locPosition);
-}
-
 </script>
-
-</body>
-</html>
