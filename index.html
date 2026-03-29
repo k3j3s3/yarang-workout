@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>野郞 운동관리 v5.4 (지도 완벽 로딩)</title>
+    <title>野郞 운동관리 v5.5 (정밀 트래킹)</title>
     <style>
         html { font-size: 14px; } 
         body { margin: 0; padding: 10px; font-family: 'Malgun Gothic', sans-serif; background: #ffffff; color: #333; overflow-x: hidden; }
@@ -18,10 +18,7 @@
         .tgl-btn.active-yes { background: #27ae60; }
         .tgl-btn.active-no { background: #e74c3c; }
         select { width: 100%; padding: 12px; font-size: 1.3rem; font-weight: 800; border-radius: 10px; border: 2px solid #27ae60; background: white; }
-        
-        /* 지도 영역 강화 */
-        #map { width: 100%; height: 280px; border-radius: 20px; border: 3px solid #27ae60; margin-bottom: 10px; background: #f9f9f9; position: relative; }
-        
+        #map { width: 100%; height: 280px; border-radius: 20px; border: 3px solid #27ae60; margin-bottom: 10px; background: #f9f9f9; }
         .dashboard { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 15px; }
         .card { background: #f8f9fa; padding: 10px 4px; border-radius: 12px; text-align: center; border: 1px solid #ced6e0; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
         .card-label { font-size: 0.85rem; font-weight: 900; background: #dfe6e9; border-radius: 5px; margin: 0 4px 6px; padding: 2px 0; }
@@ -78,7 +75,7 @@
         <button id="stopBtn" class="btn btn-stop" onclick="handleStop()">■ 운동 종료</button>
         <div id="save-selection">
             <button class="btn btn-save" onclick="saveData()">💾 기록 저장</button>
-            <button class="btn btn-cancel" onclick="location.reload()">❌ 취소 (저장안함)</button>
+            <button class="btn btn-cancel" onclick="location.reload()">❌ 취소</button>
         </div>
     </div>
 
@@ -98,6 +95,7 @@
         var path = [], totalDistance = 0, lastAnnouncedKm = 0;
         var isSnd = true;
         var workoutStarted = false;
+        var sensorSteps = 0, lastAccel = 0;
 
         function setSnd(val) {
             isSnd = val;
@@ -117,14 +115,7 @@
         }
 
         function startWorkout() {
-            // 초기값 강제 0 설정 (NaN 방지)
-            totalDistance = 0; path = []; lastAnnouncedKm = 0;
-            document.getElementById('distance').innerText = "0.00";
-            document.getElementById('steps').innerText = "0";
-            document.getElementById('kcal').innerText = "0";
-            document.getElementById('avgSpeed').innerText = "0.0";
-            document.getElementById('curSpeed').innerText = "0.0";
-
+            totalDistance = 0; path = []; lastAnnouncedKm = 0; sensorSteps = 0;
             document.getElementById('setup-area').style.display = 'none';
             document.getElementById('active-area').style.display = 'block';
             
@@ -133,22 +124,33 @@
             workoutStarted = true;
             requestWakeLock();
             
-            // 지도 초기화 (화면이 바뀐 뒤 지연 시간을 주어 컨테이너 크기를 정확히 잡게 함)
+            // 가속도 센서 시작
+            if (window.DeviceMotionEvent) {
+                window.addEventListener('devicemotion', handleMotion);
+            }
+
             setTimeout(initMap, 300);
-            speak("운동을 시작합니다. 힘내세요 오라버니!");
+            speak("운동을 시작합니다. 정밀 측정을 시작할게요!");
+        }
+
+        function handleMotion(event) {
+            if (!workoutStarted) return;
+            let acc = event.accelerationIncludingGravity;
+            if (!acc) return;
+            let totalAcc = Math.sqrt(acc.x*acc.x + acc.y*acc.y + acc.z*acc.z);
+            let delta = Math.abs(totalAcc - lastAccel);
+            if (delta > 3.0) { // 감도를 3.0으로 더 예민하게 조정
+                sensorSteps++;
+                updateDisplay();
+            }
+            lastAccel = totalAcc;
         }
 
         function initMap() {
             var mapContainer = document.getElementById('map');
-            var mapOption = { center: new kakao.maps.LatLng(37.5668, 126.9786), level: 3 };
-            
-            // 지도 생성
-            map = new kakao.maps.Map(mapContainer, mapOption);
+            map = new kakao.maps.Map(mapContainer, { center: new kakao.maps.LatLng(37.5668, 126.9786), level: 3 });
             marker = new kakao.maps.Marker({ position: map.getCenter(), map: map });
-            polyline = new kakao.maps.Polyline({ 
-                path: path, strokeWeight: 6, strokeColor: '#FF0000', strokeOpacity: 0.8, map: map 
-            });
-
+            polyline = new kakao.maps.Polyline({ path: path, strokeWeight: 6, strokeColor: '#FF0000', strokeOpacity: 0.8, map: map });
             startTracking();
         }
 
@@ -156,62 +158,71 @@
             if (watchId) navigator.geolocation.clearWatch(watchId);
             watchId = navigator.geolocation.watchPosition(function(pos) {
                 if (!workoutStarted) return;
-                
                 var lat = pos.coords.latitude, lon = pos.coords.longitude;
                 var newPos = new kakao.maps.LatLng(lat, lon);
                 
                 if (path.length > 0) {
-                    var prevPos = path[path.length - 1];
-                    var line = new kakao.maps.Polyline({ path: [prevPos, newPos] });
-                    var segmentDist = line.getLength();
-                    if (segmentDist > 1.5) { // 1.5미터 이상 이동 시 합산
-                        totalDistance += segmentDist;
+                    var line = new kakao.maps.Polyline({ path: [path[path.length - 1], newPos] });
+                    var d = line.getLength();
+                    // GPS 오차(튀는 현상) 방지: 초당 10m(시속 36km) 이하 이동만 기록
+                    if (d > 1.0 && d < 15.0) { 
+                        totalDistance += d;
                     }
                 }
                 path.push(newPos);
                 polyline.setPath(path);
-                
-                var distKm = (totalDistance / 1000) || 0;
-                document.getElementById('distance').innerText = distKm.toFixed(2);
-                
-                // 걸음수 보정
-                var wType = document.getElementById('workoutType').options[document.getElementById('workoutType').selectedIndex].text;
-                if (!wType.includes('자전거')) {
-                    document.getElementById('steps').innerText = Math.floor(distKm * 1350);
-                }
-
-                // 칼로리 및 속도
-                var met = parseFloat(document.getElementById('workoutType').value) || 3.5;
-                var hours = (Date.now() - startTime) / 3600000;
-                document.getElementById('kcal').innerText = Math.round(met * 70 * hours) || 0;
-                
-                var curS = (pos.coords.speed > 0) ? (pos.coords.speed * 3.6).toFixed(1) : "0.0";
-                document.getElementById('curSpeed').innerText = curS;
-                document.getElementById('avgSpeed').innerText = (hours > 0.0001) ? (distKm / hours).toFixed(1) : "0.0";
-                
+                updateDisplay(pos.coords.speed);
                 map.setCenter(newPos);
                 marker.setPosition(newPos);
             }, function(err) {
-                console.error("GPS Error: ", err);
-            }, { enableHighAccuracy: true, maximumAge: 0, timeout: 10000 });
+                console.error("GPS Error", err);
+            }, { enableHighAccuracy: true, maximumAge: 0, timeout: 5000 });
+        }
+
+        function updateDisplay(speed) {
+            var distKm = totalDistance / 1000;
+            document.getElementById('distance').innerText = distKm.toFixed(2);
+            
+            // [핵심 보정] 센서 걸음수와 GPS 예상 걸음수(km당 1350보) 중 큰 값을 선택
+            var gpsSteps = Math.floor(distKm * 1350);
+            var finalSteps = Math.max(sensorSteps, gpsSteps);
+            document.getElementById('steps').innerText = finalSteps;
+
+            var met = parseFloat(document.getElementById('workoutType').value) || 3.5;
+            var hours = (Date.now() - startTime) / 3600000;
+            document.getElementById('kcal').innerText = Math.round(met * 70 * hours) || 0;
+            
+            if (speed !== undefined) {
+                document.getElementById('curSpeed').innerText = (speed > 0) ? (speed * 3.6).toFixed(1) : "0.0";
+            }
+            document.getElementById('avgSpeed').innerText = (hours > 0.001) ? (distKm / hours).toFixed(1) : "0.0";
+            
+            // 1km마다 음성 안내
+            if (Math.floor(distKm) > lastAnnouncedKm) {
+                lastAnnouncedKm = Math.floor(distKm);
+                speak(lastAnnouncedKm + " 킬로미터 통과!");
+            }
         }
 
         function updateTimer() {
-            if (!startTime) return;
             var diff = Date.now() - startTime;
-            var hours = Math.floor(diff / 3600000);
-            var mins = Math.floor((diff % 3600000) / 60000);
-            var secs = Math.floor((diff % 60000) / 1000);
+            var h = Math.floor(diff / 3600000);
+            var m = Math.floor((diff % 3600000) / 60000);
+            var s = Math.floor((diff % 60000) / 1000);
             document.getElementById('timer').innerText = 
-                String(hours).padStart(2, '0') + ":" + String(mins).padStart(2, '0') + ":" + String(secs).padStart(2, '0');
+                String(h).padStart(2, '0') + ":" + String(m).padStart(2, '0') + ":" + String(s).padStart(2, '0');
+            
+            // 타이머가 돌 때마다 디스플레이 갱신 (GPS가 멈춰도 시간/칼로리는 가도록)
+            updateDisplay();
         }
 
         function handleStop() {
+            workoutStarted = false;
             clearInterval(timerInterval);
             if(watchId) navigator.geolocation.clearWatch(watchId);
             if(wakeLock) { wakeLock.release(); wakeLock = null; }
-            workoutStarted = false;
-            speak("운동을 종료합니다. 오늘 정말 고생 많으셨어요!");
+            window.removeEventListener('devicemotion', handleMotion);
+            speak("운동 종료. 정말 수고하셨어요!");
             document.getElementById('stopBtn').style.display = 'none';
             document.getElementById('save-selection').style.display = 'flex';
         }
@@ -229,7 +240,7 @@
             let h = JSON.parse(localStorage.getItem('yarang_history') || "[]");
             h.unshift(hData);
             localStorage.setItem('yarang_history', JSON.stringify(h));
-            document.getElementById('alert-msg').innerText = "기록이 저장되었습니다!";
+            document.getElementById('alert-msg').innerText = "기록 저장 완료!";
             document.getElementById('custom-alert').style.display = 'block';
         }
 
@@ -250,7 +261,7 @@
         }
 
         function delH(id) {
-            if(confirm("기록을 삭제할까요?")) {
+            if(confirm("삭제할까요?")) {
                 let h = JSON.parse(localStorage.getItem('yarang_history') || "[]");
                 localStorage.setItem('yarang_history', JSON.stringify(h.filter(i => i.id !== id)));
                 renderHistory();
