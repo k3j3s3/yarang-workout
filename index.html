@@ -290,21 +290,41 @@
             document.getElementById('custom-alert').style.display = 'block';
         }
 
-        function toggleHistory(show) {
-            if(show) { renderHistory(); document.getElementById('history-overlay').style.display = 'block'; }
-            else { document.getElementById('history-overlay').style.display = 'none'; }
-        }
+        // 1. toggleHistory 함수 수정 (열릴 때 모양을 잡아줍니다)
+function toggleHistory(show) {
+    const overlay = document.getElementById('history-overlay');
+    if(show) { 
+        renderHistory(); 
+        overlay.style.display = 'flex'; // 스타일에서 설정한 flex가 작동하게 합니다.
+    } else { 
+        overlay.style.display = 'none'; 
+    }
+}
 
-        function renderHistory() {
-            let h = JSON.parse(localStorage.getItem('yarang_history') || "[]");
-            document.getElementById('history-content').innerHTML = h.map(i => `
+// 2. renderHistory 함수 수정 (내용 구성을 바꿉니다)
+function renderHistory() {
+    let h = JSON.parse(localStorage.getItem('yarang_history') || "[]");
+    
+    // 구조를 '제목 - 스크롤영역 - 닫기버튼'으로 재구성합니다.
+    const container = document.getElementById('history-overlay');
+    
+    container.innerHTML = `
+        <h2 style="text-align:center; margin-top:0; color:#2c3e50;">📅 운동 기록 요약</h2>
+        <div id="history-content">
+            ${h.length > 0 ? h.map(i => `
                 <div class="history-item">
                     <button class="delete-btn" onclick="delH(${i.id})">삭제</button>
                     <strong>${i.date} [${i.type}]</strong><br>
                     <span>거리: ${i.dist}km | 시간: ${i.time}<br>걸음: ${i.steps}보 | 칼로리: ${i.kcal}kcal</span>
                 </div>
-            `).join('') || '<p style="text-align:center;">기록이 없습니다.</p>';
-        }
+            `).join('') : '<p style="text-align:center; padding:20px;">기록이 아직 없어요! 😊</p>'}
+        </div>
+        <button class="btn" style="background:#2c3e50; margin-bottom:0;" onclick="toggleHistory(false)">닫기</button>
+    `;
+}
+
+
+        
 
         function delH(id) {
             if(confirm("삭제할까요?")) {
