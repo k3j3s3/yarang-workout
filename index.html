@@ -51,7 +51,42 @@
         .btn-cancel:active { box-shadow: 0 3px #95a5a6; }
 
         #custom-alert { display: none; position: fixed; top: 40%; left: 50%; transform: translate(-50%, -50%); background: #2c3e50; color: white; padding: 35px; border-radius: 25px; text-align: center; z-index: 20000; width: 75%; box-shadow: 0 10px 40px rgba(0,0,0,0.5); }
-        #history-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #ffffff; z-index: 10000; padding: 15px; box-sizing: border-box; overflow-y: auto; }
+        #history-overlay { 
+    display: none; 
+    position: fixed; 
+    top: 50%; 
+    left: 50%; 
+    transform: translate(-50%, -50%); /* 화면 정중앙 배치 */
+    width: 90%; 
+    height: 85%; 
+    background: #ffffff; 
+    z-index: 10000; 
+    padding: 20px; 
+    box-sizing: border-box; 
+    border-radius: 25px; 
+    box-shadow: 0 0 30px rgba(0,0,0,0.3);
+    
+    /* 내부 레이아웃 설정: 제목-기록-버튼 순서로 배치 */
+    flex-direction: column; 
+}
+
+/* 기록 목록만 따로 스크롤이 생기도록 설정 */
+#history-content {
+    flex: 1;            /* 제목과 닫기 버튼을 제외한 나머지 공간을 다 차지 */
+    overflow-y: auto;   /* 내용이 길어지면 이 영역만 위아래로 스크롤 */
+    margin: 15px 0;
+    padding-right: 5px; /* 스크롤바와 내용 간격 */
+}
+
+/* 스크롤바 디자인 (세련되게!) */
+#history-content::-webkit-scrollbar {
+    width: 6px;
+}
+#history-content::-webkit-scrollbar-thumb {
+    background: #27ae60;
+    border-radius: 10px;
+}
+
         .history-item { background: white; padding: 18px; border-radius: 18px; margin-bottom: 15px; border-left: 10px solid #27ae60; position: relative; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
         .delete-btn { position: absolute; top: 15px; right: 15px; background: #e74c3c; color: white; border: none; padding: 8px 15px; border-radius: 10px; font-size: 0.95rem; font-weight: bold; }
     </style>
