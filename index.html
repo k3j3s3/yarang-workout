@@ -212,24 +212,37 @@
         }
 
         function startTracking() {
-            if (watchId) navigator.geolocation.clearWatch(watchId);
-            watchId = navigator.geolocation.watchPosition(function(pos) {
-                if (!workoutStarted) return;
-                var lat = pos.coords.latitude, lon = pos.coords.longitude;
-                var newPos = new kakao.maps.LatLng(lat, lon);
-                
-                if (path.length > 0) {
-                    var line = new kakao.maps.Polyline({ path: [path[path.length - 1], newPos] });
-                    var d = line.getLength();
-                    if (d > 1.0 && d < 15.0) { totalDistance += d; }
-                }
-                path.push(newPos);
-                polyline.setPath(path);
-                updateDisplay(pos.coords.speed);
-                map.setCenter(newPos);
-                marker.setPosition(newPos);
-            }, function(err) { console.error("GPS Error", err); }, { enableHighAccuracy: true, maximumAge: 0, timeout: 5000 });
+    if (watchId) navigator.geolocation.clearWatch(watchId);
+    
+    watchId = navigator.geolocation.watchPosition(function(pos) {
+        if (!workoutStarted) return;
+        var lat = pos.coords.latitude, lon = pos.coords.longitude;
+        var newPos = new kakao.maps.LatLng(lat, lon);
+        
+        if (path.length > 0) {
+            var line = new kakao.maps.Polyline({ path: [path[path.length - 1], newPos] });
+            var d = line.getLength();
+            
+            // [수정 포인트] 최소 측정 단위를 1.0m -> 0.1m로 대폭 낮춤
+            // 아주 천천히 걸으셔도 이제 거리가 누적됩니다!
+            if (d > 0.1 && d < 30.0) { 
+                totalDistance += d;
+            }
         }
+        path.push(newPos);
+        polyline.setPath(path);
+        updateDisplay(pos.coords.speed);
+        map.setCenter(newPos);
+        marker.setPosition(newPos);
+    }, function(err) { 
+        console.error("GPS Error", err); 
+    }, { 
+        enableHighAccuracy: true, // 배터리를 더 써서라도 정확하게!
+        maximumAge: 0,            // 캐시된 위치 정보 사용 안 함
+        timeout: 10000            // 응답 대기 시간 연장
+    });
+}
+
 
         function updateDisplay(speed) {
             var distKm = totalDistance / 1000;
