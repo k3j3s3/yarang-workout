@@ -118,6 +118,8 @@
         </div>
         
         <button class="btn btn-start" onclick="startWorkout()">▶ 운동 시작</button>
+        <button id="photoBtn" onclick="recordPhotoLocation()" style="background-color: #FF9800; display: none;">📸 사진 지점 기록</button>
+
         <button class="btn btn-history" onclick="toggleHistory(true)">📅 기록 확인</button>
     </div>
 
@@ -159,6 +161,28 @@
         var isSnd = true;
         var workoutStarted = false;
         var sensorSteps = 0, lastAccel = 0;
+        var photoMarkers = []; // 사진 찍은 지점들을 담을 배열
+
+function recordPhotoLocation() {
+    if (!workoutStarted || path.length === 0) return;
+    
+    // 현재 내 위치(마지막으로 파악된 GPS 좌표)를 가져옵니다.
+    var currentPos = path[path.length - 1];
+    
+    // 지도에 세울 예쁜 마커를 만듭니다.
+    var marker = new kakao.maps.Marker({
+        position: currentPos,
+        map: map,
+        title: "사진 촬영 지점"
+    });
+    
+    // 나중에 초기화하거나 관리하기 위해 배열에 넣어둡니다.
+    photoMarkers.push(marker);
+    
+    // 잠깐 "기록됨!" 메시지를 띄워주면 더 친절하겠죠?
+    console.log("사진 지점이 지도에 기록되었습니다!");
+}
+
 
         function setSnd(val) {
             isSnd = val;
@@ -191,6 +215,7 @@
 
             setTimeout(initMap, 300);
             speak("운동을 시작합니다. 정밀 측정을 시작할게요!");
+            document.getElementById('photoBtn').style.display = 'inline-block';
         }
 
         function handleMotion(event) {
@@ -284,6 +309,7 @@
             speak("운동 종료. 정말 수고하셨어요!");
             document.getElementById('stopBtn').style.display = 'none';
             document.getElementById('save-selection').style.display = 'flex';
+            document.getElementById('photoBtn').style.display = 'none';
         }
 
         function saveData() {
