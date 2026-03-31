@@ -196,6 +196,16 @@
         function updateDisplay(speed) {
             var distKm = totalDistance / 1000;
             document.getElementById('distance').innerText = distKm.toFixed(2);
+            var currentWorkout = document.getElementById('workoutType').value;
+var finalSteps = 0;
+
+if (currentWorkout !== "8.0") { // 자전거가 아닐 때만!
+    var gpsSteps = Math.floor(distKm * 1350);
+    finalSteps = Math.max(sensorSteps, gpsSteps);
+}
+// 최종 결정된 값(0 또는 계산값)을 한 번만 출력!
+document.getElementById('steps').innerText = finalSteps;
+
             var finalSteps = Math.max(sensorSteps, Math.floor(distKm * 1350));
             document.getElementById('steps').innerText = finalSteps;
             var hours = (Date.now() - startTime) / 3600000;
