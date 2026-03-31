@@ -3,21 +3,15 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>野郞 운동관리 v5.7 (디자인 업그레이드)</title>
+    <title>野郞 운동관리 v5.8 (사진 기록 기능 추가)</title>
     <style>
         html { font-size: 14px; } 
-        /* [멋부리기 1] 전체 배경을 은은한 그라데이션으로 변경 */
         body { margin: 0; padding: 10px; font-family: 'Malgun Gothic', sans-serif; background: linear-gradient(135deg, #fdfbfb 0%, #ebedee 100%); color: #333; overflow-x: hidden; }
         
-        /* [멋부리기 2] 상단 제목 영역 디자인 강화 */
         .header-container { padding: 10px 0 20px; background: rgba(255, 255, 255, 0.7); border-radius: 0 0 30px 30px; margin-bottom: 20px; box-shadow: 0 5px 15px rgba(0,0,0,0.05); }
-        
         .main-title { text-align: center; font-size: 2.5rem; font-weight: 900; color: #2c3e50; margin: 0 0 15px; letter-spacing: 4px; text-shadow: 1px 1px 2px rgba(0,0,0,0.1); }
-        
-        /* [멋부리기 3] 제목 아래 멋진 구분선 추가 */
         .title-divider { width: 60%; height: 5px; background: linear-gradient(to right, #27ae60, #f1c40f); margin: 0 auto; border-radius: 5px; }
 
-        /* [요청사항 1] 상단 운동 그림 확대 및 화면 최적화 */
         .symbol-area { text-align: center; font-size: 4.5rem; display: flex; justify-content: space-around; gap: 10px; padding: 10px 0; margin-top: 10px; }
 
         .setting-box { background: white; padding: 20px; border-radius: 20px; margin-bottom: 20px; border: 1px solid #dfe6e9; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
@@ -40,53 +34,16 @@
         .btn:active { transform: translateY(3px); box-shadow: 0 3px #1e8449; }
         .btn-start { background: #27ae60; }
         .btn-history { background: #3498db; box-shadow: 0 6px #2980b9; }
-        .btn-history:active { box-shadow: 0 3px #2980b9; }
+        .btn-photo { background: #FF9800; box-shadow: 0 6px #E68A00; margin-top: 5px; } /* 사진 버튼 스타일 */
         .btn-stop { background: #e74c3c; box-shadow: 0 6px #c0392b; }
-        .btn-stop:active { box-shadow: 0 3px #c0392b; }
         
         #save-selection { display: none; flex-direction: column; gap: 12px; }
         .btn-save { background: #2ecc71; box-shadow: 0 6px #27ae60; }
-        .btn-save:active { box-shadow: 0 3px #27ae60; }
         .btn-cancel { background: #bdc3c7; color: #2c3e50; box-shadow: 0 6px #95a5a6; }
-        .btn-cancel:active { box-shadow: 0 3px #95a5a6; }
 
         #custom-alert { display: none; position: fixed; top: 40%; left: 50%; transform: translate(-50%, -50%); background: #2c3e50; color: white; padding: 35px; border-radius: 25px; text-align: center; z-index: 20000; width: 75%; box-shadow: 0 10px 40px rgba(0,0,0,0.5); }
-        #history-overlay { 
-                         display: none; 
-                         position: fixed; 
-                            top: 50%; 
-                            left: 50%; 
-                            transform: translate(-50%, -50%); /* 화면 정중앙 배치 */
-                            width: 90%; 
-                            height: 95%; 
-                            background: #ffffff; 
-                            z-index: 10000; 
-                            padding: 20px; 
-                            box-sizing: border-box; 
-                            border-radius: 25px; 
-                            box-shadow: 0 0 30px rgba(0,0,0,0.3);
-    
-    /* 내부 레이아웃 설정: 제목-기록-버튼 순서로 배치 */
-    flex-direction: column; 
-}
-
-/* 기록 목록만 따로 스크롤이 생기도록 설정 */
-#history-content {
-    flex: 1;            /* 제목과 닫기 버튼을 제외한 나머지 공간을 다 차지 */
-    overflow-y: auto;   /* 내용이 길어지면 이 영역만 위아래로 스크롤 */
-    margin: 15px 0;
-    padding-right: 5px; /* 스크롤바와 내용 간격 */
-}
-
-/* 스크롤바 디자인 (세련되게!) */
-#history-content::-webkit-scrollbar {
-    width: 6px;
-}
-#history-content::-webkit-scrollbar-thumb {
-    background: #27ae60;
-    border-radius: 10px;
-}
-
+        #history-overlay { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 90%; height: 95%; background: #ffffff; z-index: 10000; padding: 20px; box-sizing: border-box; border-radius: 25px; box-shadow: 0 0 30px rgba(0,0,0,0.3); flex-direction: column; }
+        #history-content { flex: 1; overflow-y: auto; margin: 15px 0; padding-right: 5px; }
         .history-item { background: white; padding: 18px; border-radius: 18px; margin-bottom: 15px; border-left: 10px solid #27ae60; position: relative; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
         .delete-btn { position: absolute; top: 15px; right: 15px; background: #e74c3c; color: white; border: none; padding: 8px 15px; border-radius: 10px; font-size: 0.95rem; font-weight: bold; }
     </style>
@@ -118,13 +75,13 @@
         </div>
         
         <button class="btn btn-start" onclick="startWorkout()">▶ 운동 시작</button>
-        <button id="photoBtn" onclick="recordPhotoLocation()" style="background-color: #FF9800; display: none;">📸 사진 지점 기록</button>
-
         <button class="btn btn-history" onclick="toggleHistory(true)">📅 기록 확인</button>
     </div>
 
     <div id="active-area" style="display:none;">
         <div id="map"></div>
+        <button id="photoBtn" class="btn btn-photo" onclick="recordPhotoLocation()" style="display: none;">📸 사진 지점 기록</button>
+        
         <div class="dashboard">
             <div class="card"><div class="card-label">시간</div><div id="timer" class="card-value">00:00:00</div></div>
             <div class="card"><div class="card-label">거리(km)</div><div id="distance" class="card-value">0.00</div></div>
@@ -145,44 +102,16 @@
         <button class="btn" style="background:#27ae60; margin-bottom:0;" onclick="location.reload()">확인</button>
     </div>
 
-    <div id="history-overlay">
-        <h2 style="text-align:center; font-size:2rem; margin-bottom:20px;">📅 나의 운동 기록</h2>
-        <div id="history-content"></div>
-        <button class="btn" style="background:#2c3e50; margin-top:20px;" onclick="toggleHistory(false)">닫기</button>
-    </div>
-    <div style="text-align: right; font-size: 0.8rem; color: #888; padding: 10px;">
-    made by KJS
-    </div>
-
+    <div id="history-overlay"></div>
+    
+    <div style="text-align: right; font-size: 0.8rem; color: #888; padding: 10px;">made by KJS</div>
 
     <script>
         var map, marker, polyline, startTime, timerInterval, watchId, wakeLock = null;
         var path = [], totalDistance = 0, lastAnnouncedKm = 0;
-        var isSnd = true;
-        var workoutStarted = false;
+        var isSnd = true, workoutStarted = false;
         var sensorSteps = 0, lastAccel = 0;
-        var photoMarkers = []; // 사진 찍은 지점들을 담을 배열
-
-function recordPhotoLocation() {
-    if (!workoutStarted || path.length === 0) return;
-    
-    // 현재 내 위치(마지막으로 파악된 GPS 좌표)를 가져옵니다.
-    var currentPos = path[path.length - 1];
-    
-    // 지도에 세울 예쁜 마커를 만듭니다.
-    var marker = new kakao.maps.Marker({
-        position: currentPos,
-        map: map,
-        title: "사진 촬영 지점"
-    });
-    
-    // 나중에 초기화하거나 관리하기 위해 배열에 넣어둡니다.
-    photoMarkers.push(marker);
-    
-    // 잠깐 "기록됨!" 메시지를 띄워주면 더 친절하겠죠?
-    console.log("사진 지점이 지도에 기록되었습니다!");
-}
-
+        var photoMarkers = []; // 사진 마커 관리 배열
 
         function setSnd(val) {
             isSnd = val;
@@ -202,9 +131,10 @@ function recordPhotoLocation() {
         }
 
         function startWorkout() {
-            totalDistance = 0; path = []; lastAnnouncedKm = 0; sensorSteps = 0;
+            totalDistance = 0; path = []; lastAnnouncedKm = 0; sensorSteps = 0; photoMarkers = [];
             document.getElementById('setup-area').style.display = 'none';
             document.getElementById('active-area').style.display = 'block';
+            document.getElementById('photoBtn').style.display = 'block'; // 버튼 등장
             
             startTime = Date.now();
             timerInterval = setInterval(updateTimer, 1000);
@@ -212,10 +142,8 @@ function recordPhotoLocation() {
             requestWakeLock();
             
             if (window.DeviceMotionEvent) { window.addEventListener('devicemotion', handleMotion); }
-
             setTimeout(initMap, 300);
-            speak("운동을 시작합니다. 정밀 측정을 시작할게요!");
-            document.getElementById('photoBtn').style.display = 'inline-block';
+            speak("운동을 시작합니다.");
         }
 
         function handleMotion(event) {
@@ -224,7 +152,7 @@ function recordPhotoLocation() {
             if (!acc) return;
             let totalAcc = Math.sqrt(acc.x*acc.x + acc.y*acc.y + acc.z*acc.z);
             let delta = Math.abs(totalAcc - lastAccel);
-            if (delta > 4.5) { sensorSteps++; updateDisplay(); }
+            if (delta > 4.5) { sensorSteps++; updateDisplay(); } // 민감도 4.5 적용
             lastAccel = totalAcc;
         }
 
@@ -237,66 +165,53 @@ function recordPhotoLocation() {
         }
 
         function startTracking() {
-    if (watchId) navigator.geolocation.clearWatch(watchId);
-    
-    watchId = navigator.geolocation.watchPosition(function(pos) {
-        if (!workoutStarted) return;
-        var lat = pos.coords.latitude, lon = pos.coords.longitude;
-        var newPos = new kakao.maps.LatLng(lat, lon);
-        
-        if (path.length > 0) {
-            var line = new kakao.maps.Polyline({ path: [path[path.length - 1], newPos] });
-            var d = line.getLength();
-            
-            // [수정 포인트] 최소 측정 단위를 1.0m -> 0.1m로 대폭 낮춤
-            // 아주 천천히 걸으셔도 이제 거리가 누적됩니다!
-            if (d > 0.1 && d < 30.0) { 
-                totalDistance += d;
-            }
+            if (watchId) navigator.geolocation.clearWatch(watchId);
+            watchId = navigator.geolocation.watchPosition(function(pos) {
+                if (!workoutStarted) return;
+                var lat = pos.coords.latitude, lon = pos.coords.longitude;
+                var newPos = new kakao.maps.LatLng(lat, lon);
+                
+                if (path.length > 0) {
+                    var line = new kakao.maps.Polyline({ path: [path[path.length - 1], newPos] });
+                    var d = line.getLength();
+                    if (d > 0.1 && d < 30.0) { totalDistance += d; } // 0.1m 단위 정밀 측정
+                }
+                path.push(newPos);
+                polyline.setPath(path);
+                updateDisplay(pos.coords.speed);
+                map.setCenter(newPos);
+                marker.setPosition(newPos);
+            }, function(err) { console.error("GPS Error", err); }, 
+            { enableHighAccuracy: true, maximumAge: 0, timeout: 10000 });
         }
-        path.push(newPos);
-        polyline.setPath(path);
-        updateDisplay(pos.coords.speed);
-        map.setCenter(newPos);
-        marker.setPosition(newPos);
-    }, function(err) { 
-        console.error("GPS Error", err); 
-    }, { 
-        enableHighAccuracy: true, // 배터리를 더 써서라도 정확하게!
-        maximumAge: 0,            // 캐시된 위치 정보 사용 안 함
-        timeout: 10000            // 응답 대기 시간 연장
-    });
-}
 
+        function recordPhotoLocation() {
+            if (!workoutStarted || path.length === 0) return;
+            var currentPos = path[path.length - 1];
+            var pMarker = new kakao.maps.Marker({ position: currentPos, map: map });
+            photoMarkers.push(pMarker);
+            speak("사진 촬영 지점을 기록했습니다.");
+        }
 
         function updateDisplay(speed) {
             var distKm = totalDistance / 1000;
             document.getElementById('distance').innerText = distKm.toFixed(2);
-            
-            var gpsSteps = Math.floor(distKm * 1350);
-            var finalSteps = Math.max(sensorSteps, gpsSteps);
+            var finalSteps = Math.max(sensorSteps, Math.floor(distKm * 1350));
             document.getElementById('steps').innerText = finalSteps;
-
-            var met = parseFloat(document.getElementById('workoutType').value) || 3.5;
             var hours = (Date.now() - startTime) / 3600000;
+            var met = parseFloat(document.getElementById('workoutType').value) || 3.5;
             document.getElementById('kcal').innerText = Math.round(met * 70 * hours) || 0;
-            
             if (speed !== undefined) { document.getElementById('curSpeed').innerText = (speed > 0) ? (speed * 3.6).toFixed(1) : "0.0"; }
             document.getElementById('avgSpeed').innerText = (hours > 0.001) ? (distKm / hours).toFixed(1) : "0.0";
-            
-            if (Math.floor(distKm) > lastAnnouncedKm) {
-                lastAnnouncedKm = Math.floor(distKm);
-                speak(lastAnnouncedKm + " 킬로미터 통과!");
-            }
+            if (Math.floor(distKm) > lastAnnouncedKm) { lastAnnouncedKm = Math.floor(distKm); speak(lastAnnouncedKm + " 킬로미터 통과!"); }
         }
 
         function updateTimer() {
             var diff = Date.now() - startTime;
-            var h = Math.floor(diff / 3600000);
-            var m = Math.floor((diff % 3600000) / 60000);
-            var s = Math.floor((diff % 60000) / 1000);
-            document.getElementById('timer').innerText = 
-                String(h).padStart(2, '0') + ":" + String(m).padStart(2, '0') + ":" + String(s).padStart(2, '0');
+            var h = String(Math.floor(diff / 3600000)).padStart(2, '0');
+            var m = String(Math.floor((diff % 3600000) / 60000)).padStart(2, '0');
+            var s = String(Math.floor((diff % 60000) / 1000)).padStart(2, '0');
+            document.getElementById('timer').innerText = h + ":" + m + ":" + s;
             updateDisplay();
         }
 
@@ -308,8 +223,8 @@ function recordPhotoLocation() {
             window.removeEventListener('devicemotion', handleMotion);
             speak("운동 종료. 정말 수고하셨어요!");
             document.getElementById('stopBtn').style.display = 'none';
+            document.getElementById('photoBtn').style.display = 'none'; // 버튼 숨김
             document.getElementById('save-selection').style.display = 'flex';
-            document.getElementById('photoBtn').style.display = 'none';
         }
 
         function saveData() {
@@ -329,41 +244,28 @@ function recordPhotoLocation() {
             document.getElementById('custom-alert').style.display = 'block';
         }
 
-        // 1. toggleHistory 함수 수정 (열릴 때 모양을 잡아줍니다)
-function toggleHistory(show) {
-    const overlay = document.getElementById('history-overlay');
-    if(show) { 
-        renderHistory(); 
-        overlay.style.display = 'flex'; // 스타일에서 설정한 flex가 작동하게 합니다.
-    } else { 
-        overlay.style.display = 'none'; 
-    }
-}
+        function toggleHistory(show) {
+            const overlay = document.getElementById('history-overlay');
+            if(show) { renderHistory(); overlay.style.display = 'flex'; } 
+            else { overlay.style.display = 'none'; }
+        }
 
-// 2. renderHistory 함수 수정 (내용 구성을 바꿉니다)
-function renderHistory() {
-    let h = JSON.parse(localStorage.getItem('yarang_history') || "[]");
-    
-    // 구조를 '제목 - 스크롤영역 - 닫기버튼'으로 재구성합니다.
-    const container = document.getElementById('history-overlay');
-    
-    container.innerHTML = `
-        <h2 style="text-align:center; margin-top:0; color:#2c3e50;">📅 운동 기록 요약</h2>
-        <div id="history-content">
-            ${h.length > 0 ? h.map(i => `
-                <div class="history-item">
-                    <button class="delete-btn" onclick="delH(${i.id})">삭제</button>
-                    <strong>${i.date} [${i.type}]</strong><br>
-                    <span>거리: ${i.dist}km | 시간: ${i.time}<br>걸음: ${i.steps}보 | 칼로리: ${i.kcal}kcal</span>
+        function renderHistory() {
+            let h = JSON.parse(localStorage.getItem('yarang_history') || "[]");
+            document.getElementById('history-overlay').innerHTML = `
+                <h2 style="text-align:center; margin-top:0; color:#2c3e50;">📅 운동 기록 요약</h2>
+                <div id="history-content">
+                    ${h.length > 0 ? h.map(i => `
+                        <div class="history-item">
+                            <button class="delete-btn" onclick="delH(${i.id})">삭제</button>
+                            <strong>${i.date} [${i.type}]</strong><br>
+                            <span>거리: ${i.dist}km | 시간: ${i.time}<br>걸음: ${i.steps}보 | 칼로리: ${i.kcal}kcal</span>
+                        </div>
+                    `).join('') : '<p style="text-align:center; padding:20px;">기록이 아직 없어요! 😊</p>'}
                 </div>
-            `).join('') : '<p style="text-align:center; padding:20px;">기록이 아직 없어요! 😊</p>'}
-        </div>
-        <button class="btn" style="background:#2c3e50; margin-bottom:0;" onclick="toggleHistory(false)">닫기</button>
-    `;
-}
-
-
-        
+                <button class="btn" style="background:#2c3e50; margin-bottom:0;" onclick="toggleHistory(false)">닫기</button>
+            `;
+        }
 
         function delH(id) {
             if(confirm("삭제할까요?")) {
@@ -373,29 +275,17 @@ function renderHistory() {
             }
         }
 
-        // 화면이 다시 활성화될 때(사진 찍고 돌아왔을 때) 실행되는 코드
-window.addEventListener('focus', function() {
-    if (workoutStarted && watchId) {
-        console.log("화면 복귀! GPS 상태를 점검하고 재연결합니다.");
-        
-        // 기존 연결을 확실히 끊고 새롭게 다시 시작해서 위치를 잡습니다.
-        navigator.geolocation.clearWatch(watchId);
-        startTracking(); 
-        
-        // 지도 중심을 현재 내 위치로 다시 맞춥니다.
-        if (path.length > 0) {
-            map.setCenter(path[path.length - 1]);
-        }
-    }
-});
-
-// 추가로, 화면 가시성 상태가 변할 때도 체크 (더 확실하게!)
-document.addEventListener('visibilitychange', function() {
-    if (document.visibilityState === 'visible' && workoutStarted) {
-        startTracking();
-    }
-});
-
+        // 화면 복귀 시 GPS 재연결 로직
+        window.addEventListener('focus', function() {
+            if (workoutStarted && watchId) {
+                navigator.geolocation.clearWatch(watchId);
+                startTracking(); 
+                if (path.length > 0) { map.setCenter(path[path.length - 1]); }
+            }
+        });
+        document.addEventListener('visibilitychange', function() {
+            if (document.visibilityState === 'visible' && workoutStarted) { startTracking(); }
+        });
     </script>
 </body>
 </html>
