@@ -346,6 +346,30 @@ function renderHistory() {
                 renderHistory();
             }
         }
+
+        // 화면이 다시 활성화될 때(사진 찍고 돌아왔을 때) 실행되는 코드
+window.addEventListener('focus', function() {
+    if (workoutStarted && watchId) {
+        console.log("화면 복귀! GPS 상태를 점검하고 재연결합니다.");
+        
+        // 기존 연결을 확실히 끊고 새롭게 다시 시작해서 위치를 잡습니다.
+        navigator.geolocation.clearWatch(watchId);
+        startTracking(); 
+        
+        // 지도 중심을 현재 내 위치로 다시 맞춥니다.
+        if (path.length > 0) {
+            map.setCenter(path[path.length - 1]);
+        }
+    }
+});
+
+// 추가로, 화면 가시성 상태가 변할 때도 체크 (더 확실하게!)
+document.addEventListener('visibilitychange', function() {
+    if (document.visibilityState === 'visible' && workoutStarted) {
+        startTracking();
+    }
+});
+
     </script>
 </body>
 </html>
