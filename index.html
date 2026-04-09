@@ -144,7 +144,7 @@
             if (!acc) return;
             let totalAcc = Math.sqrt(acc.x*acc.x + acc.y*acc.y + acc.z*acc.z);
             let delta = Math.abs(totalAcc - lastAccel);
-            if (delta > 5.5) { sensorSteps++; updateDisplay(); }
+            if (delta > 6) { sensorSteps++; updateDisplay(); }
             lastAccel = totalAcc;
         }
 
@@ -202,7 +202,8 @@
 
             var hours = (Date.now() - startTime) / 3600000;
             var met = parseFloat(document.getElementById('workoutType').value) || 3.5;
-            document.getElementById('kcal').innerText = Math.round(met * 70 * hours) || 0;
+           var kcalValue = Math.round((met * 70 * hours * 0.5) + (distKm * 60));
+            document.getElementById('kcal').innerText = kcalValue;
             
             if (speed !== undefined) { document.getElementById('curSpeed').innerText = (speed > 0) ? (speed * 3.6).toFixed(1) : "0.0"; }
             document.getElementById('avgSpeed').innerText = (hours > 0.001) ? (distKm / hours).toFixed(1) : "0.0";
