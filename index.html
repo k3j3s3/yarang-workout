@@ -123,20 +123,28 @@
         }
 
         function startWorkout() {
-            totalDistance = 0; path = []; lastAnnouncedKm = 0; sensorSteps = 0; photoMarkers = [];
-            document.getElementById('setup-area').style.display = 'none';
-            document.getElementById('active-area').style.display = 'block';
-            document.getElementById('photoBtn').style.display = 'block';
-            
-            startTime = Date.now();
-            timerInterval = setInterval(updateTimer, 1000);
-            workoutStarted = true;
-            requestWakeLock();
-            
-            if (window.DeviceMotionEvent) { window.addEventListener('devicemotion', handleMotion); }
-            setTimeout(initMap, 300);
-            speak("운동을 시작합니다.");
-        }
+    // 1. 모든 데이터 초기화 (이게 핵심!)
+    totalDistance = 0; 
+    path = [];        // 이전 좌표 기록 싹 비우기
+    lastAnnouncedKm = 0; 
+    sensorSteps = 0; 
+    photoMarkers = [];
+    
+    document.getElementById('setup-area').style.display = 'none';
+    document.getElementById('active-area').style.display = 'block';
+    document.getElementById('photoBtn').style.display = 'block';
+    
+    startTime = Date.now();
+    timerInterval = setInterval(updateTimer, 1000);
+    workoutStarted = true;
+    requestWakeLock();
+    
+    if (window.DeviceMotionEvent) { window.addEventListener('devicemotion', handleMotion); }
+    
+    // 2. 지도를 초기화하면서 '현재 위치'를 새로 잡도록 유도
+    setTimeout(initMap, 300);
+    speak("운동을 시작합니다.");
+}
 
         function handleMotion(event) {
             if (!workoutStarted) return;
