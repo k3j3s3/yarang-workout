@@ -156,34 +156,34 @@
             startTracking();
         }
 
-        function startTracking() {
-            if (watchId) navigator.geolocation.clearWatch(watchId);
-            
-            // 고정밀 모드 및 타임아웃 최적화
-            watchId = navigator.geolocation.watchPosition(function(pos) {
-                if (!workoutStarted) return;
-                var lat = pos.coords.latitude, lon = pos.coords.longitude;
-                var newPos = new kakao.maps.LatLng(lat, lon);
-                
-                if (path.length > 0) {
-                    var line = new kakao.maps.Polyline({ path: [path[path.length - 1], newPos] });
-                    var d = line.getLength();
-                    // 비정상적인 도약 방지 (30m 이상 튐 방지)
-                    if (d > 0.1 && d < 50.0) { totalDistance += d; }
-                }
-                path.push(newPos);
-                polyline.setPath(path);
-                updateDisplay(pos.coords.speed);
-                map.setCenter(newPos);
-                marker.setPosition(newPos);
-            }, function(err) { console.error("GPS Error", err); }, 
-            { 
-                enableHighAccuracy: true, 
-                maximumAge: 0, 
-                timeout: 5000 // 타임아웃을 줄여서 더 자주 시도하게 함
-            });
-        }
+       function startTracking() {
+        if (watchId) navigator.geolocation.clearWatch(watchId);
+             watchId = navigator.geolocation.watchPosition(function(pos) {
+        if (!workoutStarted) return;
+        var lat = pos.coords.latitude, lon = pos.coords.longitude;
+        var newPos = new kakao.maps.LatLng(lat, lon);
+        
+        if (path.length > 0) {
+            var line = new kakao.maps.Polyline({ path: [path[path.length - 1], newPos] });
+            var d = line.getLength();
 
+            // [보정 포인트] GPS 정확도가 20m 이내인 좋은 신호일 때만 거리로 인정!
+            // 그리고 너무 짧거나(2m 미만) 너무 긴(40m 초과) 도약은 무시합니다.
+            if (pos.coords.accuracy < 20) { 
+                if (d > 2.0 && d < 40.0) { 
+                    totalDistance += d; 
+                }
+            }
+        }
+        path.push(newPos);
+        polyline.setPath(path);
+        updateDisplay(pos.coords.speed);
+        map.setCenter(newPos);
+        marker.setPosition(newPos);
+    },
+    function(err) { console.error("GPS Error", err); }, 
+         { enableHighAccuracy: true, maximumAge: 0, timeout: 5000 });
+    }
         function recordPhotoLocation() {
             if (!workoutStarted || path.length === 0) return;
             var currentPos = path[path.length - 1];
