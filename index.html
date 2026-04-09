@@ -216,10 +216,21 @@
             if (speed !== undefined) { document.getElementById('curSpeed').innerText = (speed > 0) ? (speed * 3.6).toFixed(1) : "0.0"; }
             document.getElementById('avgSpeed').innerText = (hours > 0.001) ? (distKm / hours).toFixed(1) : "0.0";
             
-            if (Math.floor(distKm) > lastAnnouncedKm) { 
-                lastAnnouncedKm = Math.floor(distKm); 
-                speak(lastAnnouncedKm + " 킬로미터 통과!"); 
-            }
+           // [보정 포인트] 1km마다 속도 정보까지 상세하게 안내!
+           if (Math.floor(distKm) > lastAnnouncedKm) { 
+              lastAnnouncedKm = Math.floor(distKm); 
+    
+           // 현재 표시된 속도 값들을 가져옵니다.
+             var curS = document.getElementById('curSpeed').innerText;
+             var avgS = document.getElementById('avgSpeed').innerText;
+    
+           // 안내 멘트 구성
+            var speechMsg = lastAnnouncedKm + " 킬로미터 통과! " +
+                    "현재 속도는 시속 " + curS + " 킬로미터이며, " +
+                    "평균 속도는 시속 " + avgS + " 킬로미터입니다.";
+    
+             speak(speechMsg); 
+          }
         }
 
         function updateTimer() {
