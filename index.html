@@ -151,7 +151,7 @@
             if (!acc) return;
             let totalAcc = Math.sqrt(acc.x*acc.x + acc.y*acc.y + acc.z*acc.z);
             let delta = Math.abs(totalAcc - lastAccel);
-            if (delta > 6.5) { sensorSteps++; updateDisplay(); }
+            if (delta > 6) { sensorSteps++; updateDisplay(); }
             lastAccel = totalAcc;
         }
 
@@ -176,8 +176,8 @@
 
             // [보정 포인트] GPS 정확도가 20m 이내인 좋은 신호일 때만 거리로 인정!
             // 그리고 너무 짧거나(2m 미만) 너무 긴(40m 초과) 도약은 무시합니다.
-            if (pos.coords.accuracy < 20) { 
-                if (d > 2.0 && d < 40.0) { 
+            if (pos.coords.accuracy < 40) { 
+                if (d > 0.5 && d < 50.0) { 
                     totalDistance += d; 
                 }
             }
