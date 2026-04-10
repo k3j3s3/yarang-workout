@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>野郞 운동관리 v6.2 </title>
+    <title>野郞 운동관리 v6.3</title>
     <style>
         html { font-size: 14px; } 
         body { margin: 0; padding: 10px; font-family: 'Malgun Gothic', sans-serif; background: linear-gradient(135deg, #fdfbfb 0%, #ebedee 100%); color: #333; overflow-x: hidden; }
@@ -36,10 +36,10 @@
         #custom-alert { display: none; position: fixed; top: 40%; left: 50%; transform: translate(-50%, -50%); background: #2c3e50; color: white; padding: 35px; border-radius: 25px; text-align: center; z-index: 20000; width: 75%; box-shadow: 0 10px 40px rgba(0,0,0,0.5); }
         #history-overlay { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 90%; height: 95%; background: #ffffff; z-index: 10000; padding: 20px; box-sizing: border-box; border-radius: 25px; box-shadow: 0 0 30px rgba(0,0,0,0.3); flex-direction: column; }
         #history-content { flex: 1; overflow-y: auto; margin: 15px 0; padding-right: 5px; }
-       .history-item { background: white; padding: 18px; padding-right: 70px; border-radius: 18px; margin-bottom: 15px; border-left: 10px solid #27ae60; position: relative; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
-       .delete-btn {position: absolute; top: 50%; right: 15px; transform: translateY(-50%); background: rgba(231, 76, 60, 0.8); color: white; border: none; padding: 6px 12px; border-radius: 8px; font-size: 0.85rem; font-weight: bold; cursor: pointer;}
+        .history-item { background: white; padding: 18px; padding-right: 70px; border-radius: 18px; margin-bottom: 15px; border-left: 10px solid #27ae60; position: relative; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
+        .delete-btn { position: absolute; top: 50%; right: 15px; transform: translateY(-50%); background: rgba(231, 76, 60, 0.8); color: white; border: none; padding: 6px 12px; border-radius: 8px; font-size: 0.85rem; font-weight: bold; cursor: pointer;}
     </style>
-    <script type="text/javascript" src="https://dapi.kakao.com/v2/maps/sdk.js?appkey=271e6bea302e93a84488444c38490d7b"></script>
+    <script type="text/javascript" src="https://dapi.kakao.com/v2/maps/sdk.js?appkey=271e6bea302e93a84488444c38490d7b&libraries=services"></script>
 </head>
 <body>
 
@@ -95,7 +95,7 @@
     </div>
 
     <div id="history-overlay"></div>
-    <div style="text-align: right; font-size: 0.8rem; color: #888; padding: 10px;">made by KJS</div>
+    <div style="text-align: right; font-size: 0.8rem; color: #888; padding: 10px;">made by KJS & 지미</div>
 
     <script>
         var map, marker, polyline, startTime, timerInterval, watchId, wakeLock = null;
@@ -103,6 +103,7 @@
         var isSnd = true, workoutStarted = false;
         var sensorSteps = 0, lastAccel = 0;
         var photoMarkers = [];
+        var achievedSummits = []; // [V6.3 추가] 완등한 산/봉우리 명단
 
         function setSnd(val) {
             isSnd = val;
@@ -122,28 +123,22 @@
         }
 
         function startWorkout() {
-    // 1. 모든 데이터 초기화 (이게 핵심!)
-    totalDistance = 0; 
-    path = [];        // 이전 좌표 기록 싹 비우기
-    lastAnnouncedKm = 0; 
-    sensorSteps = 0; 
-    photoMarkers = [];
-    
-    document.getElementById('setup-area').style.display = 'none';
-    document.getElementById('active-area').style.display = 'block';
-    document.getElementById('photoBtn').style.display = 'block';
-    
-    startTime = Date.now();
-    timerInterval = setInterval(updateTimer, 1000);
-    workoutStarted = true;
-    requestWakeLock();
-    
-    if (window.DeviceMotionEvent) { window.addEventListener('devicemotion', handleMotion); }
-    
-    // 2. 지도를 초기화하면서 '현재 위치'를 새로 잡도록 유도
-    setTimeout(initMap, 300);
-    speak("운동을 시작합니다.");
-}
+            totalDistance = 0; path = []; lastAnnouncedKm = 0; sensorSteps = 0; 
+            photoMarkers = []; achievedSummits = []; // 초기화
+            
+            document.getElementById('setup-area').style.display = 'none';
+            document.getElementById('active-area').style.display = 'block';
+            document.getElementById('photoBtn').style.display = 'block';
+            
+            startTime = Date.now();
+            timerInterval = setInterval(updateTimer, 1000);
+            workoutStarted = true;
+            requestWakeLock();
+            
+            if (window.DeviceMotionEvent) { window.addEventListener('devicemotion', handleMotion); }
+            setTimeout(initMap, 300);
+            speak("운동을 시작합니다.");
+        }
 
         function handleMotion(event) {
             if (!workoutStarted) return;
@@ -151,7 +146,7 @@
             if (!acc) return;
             let totalAcc = Math.sqrt(acc.x*acc.x + acc.y*acc.y + acc.z*acc.z);
             let delta = Math.abs(totalAcc - lastAccel);
-            if (delta > 6) { sensorSteps++; updateDisplay(); }
+            if (delta > 6.0) { sensorSteps++; updateDisplay(); }
             lastAccel = totalAcc;
         }
 
@@ -163,59 +158,69 @@
             startTracking();
         }
 
-       function startTracking() {
-    if (watchId) navigator.geolocation.clearWatch(watchId);
+        function startTracking() {
+            if (watchId) navigator.geolocation.clearWatch(watchId);
+            watchId = navigator.geolocation.watchPosition(function(pos) {
+                if (!workoutStarted) return;
+                var lat = pos.coords.latitude, lon = pos.coords.longitude;
+                var newPos = new kakao.maps.LatLng(lat, lon);
+                var type = document.getElementById('workoutType').value;
 
-    watchId = navigator.geolocation.watchPosition(function(pos) {
-        if (!workoutStarted) return;
+                // [V6.3 수정] 오라버니 맞춤형 운동별 최소 거리 필터
+                var minDistance = 0.5; 
+                if (type == "6.0") { minDistance = 0.3; }      // 등산: 0.3m
+                else if (type == "7.0") { minDistance = 1.0; } // 달리기: 1.0m
+                else if (type == "8.0") { minDistance = 1.5; } // 자전거: 1.5m
 
-        var lat = pos.coords.latitude, lon = pos.coords.longitude;
-        var newPos = new kakao.maps.LatLng(lat, lon);
-        var type = document.getElementById('workoutType').value;
-        
-        // [오라버니의 특수 처방] 운동 종류별 최소 이동거리(문턱값) 설정
-        var minDistance = 0.5; // 기본값 (걷기)
-        if (type == "6.0") { minDistance = 0.3; }      // 등산: 아주 느린 보폭 고려
-        else if (type == "7.0") { minDistance = 1.0; } // 달리기: 반동 및 GPS 튐 방지
-        else if (type == "8.0") { minDistance = 1.5; } // 자전거: 빠른 속도 대응
+                if (path.length > 0) {
+                    var lastPos = path[path.length - 1];
+                    var line = new kakao.maps.Polyline({ path: [lastPos, newPos] });
+                    var d = line.getLength();
 
-        if (path.length > 0) {
-            var lastPos = path[path.length - 1];
-            var line = new kakao.maps.Polyline({ path: [lastPos, newPos] });
-            var d = line.getLength(); // 두 지점 사이의 거리(m)
-
-            // [보정 로직] 
-            // 1. GPS 정확도가 40m 이내인 비교적 깨끗한 신호일 것
-            // 2. 설정한 운동별 최소 거리(minDistance)보다 더 많이 움직였을 것
-            // 3. 순간 도약이 50m를 넘지 않을 것 (터널 등 신호 튐 방지)
-            if (pos.coords.accuracy < 40) { 
-                if (d > minDistance && d < 50.0) { 
-                    totalDistance += d; 
+                    // 정확도 40m 이내 데이터만 인정
+                    if (pos.coords.accuracy < 40) { 
+                        if (d > minDistance && d < 50.0) { 
+                            totalDistance += d; 
+                        }
+                    }
                 }
-            }
+                path.push(newPos);
+                polyline.setPath(path);
+                updateDisplay(pos.coords.speed);
+                map.setCenter(newPos);
+                marker.setPosition(newPos);
+
+                // [V6.3 추가] 등산 중 봉우리 감지 체크
+                if (type == "6.0") { checkSummit(lat, lon); }
+
+            }, function(err) { console.error("GPS Error", err); }, 
+            { enableHighAccuracy: true, maximumAge: 0, timeout: 5000 });
         }
 
-        // 경로 그리기 및 지도 업데이트
-        path.push(newPos);
-        polyline.setPath(path);
-        updateDisplay(pos.coords.speed);
-        map.setCenter(newPos);
-        marker.setPosition(newPos);
+        // [V6.3 추가] 실시간 완등 감지 함수
+        function checkSummit(lat, lon) {
+            var geocoder = new kakao.maps.services.Geocoder();
+            geocoder.coord2Address(lon, lat, function(result, status) {
+                if (status === kakao.maps.services.Status.OK) {
+                    // 주소 정보에서 산/봉우리 명칭 탐색 (법정동/리 혹은 상세지명)
+                    var addr = result[0].address.address_name;
+                    // ※ 실제 API 결과에서 '산'이나 '봉' 키워드 추출 로직
+                    // (여기서는 예시로 주소 끝자리를 체크하거나, 특정 키워드를 검색합니다)
+                    var words = addr.split(' ');
+                    words.forEach(function(word) {
+                        if ((word.endsWith('산') || word.endsWith('봉')) && !achievedSummits.includes(word)) {
+                            achievedSummits.push(word);
+                            speak(word + " 부근에 도달했습니다. 완등을 축하합니다!");
+                        }
+                    });
+                }
+            });
+        }
 
-    }, function(err) { 
-        console.error("GPS Error", err); 
-    }, { 
-        enableHighAccuracy: true, 
-        maximumAge: 0, 
-        timeout: 5000 
-    });
-}
-
-       
         function recordPhotoLocation() {
             if (!workoutStarted || path.length === 0) return;
             var currentPos = path[path.length - 1];
-            var pMarker = new kakao.maps.Marker({ position: currentPos, map: map });
+            var pMarker = new kakao.maps.Marker({ position: currentPos, map: map, image: new kakao.maps.MarkerImage('https://t1.daumcdn.net/localimg/localimages/07/mapapidoc/markerStar.png', new kakao.maps.Size(24, 35)) });
             photoMarkers.push(pMarker);
             speak("촬영 지점 기록.");
         }
@@ -230,27 +235,18 @@
 
             var hours = (Date.now() - startTime) / 3600000;
             var met = parseFloat(document.getElementById('workoutType').value) || 3.5;
-           var kcalValue = Math.round((met * 70 * hours * 0.5) + (distKm * 60));
+            var kcalValue = Math.round((met * 70 * hours * 0.5) + (distKm * 60));
             document.getElementById('kcal').innerText = kcalValue;
             
             if (speed !== undefined) { document.getElementById('curSpeed').innerText = (speed > 0) ? (speed * 3.6).toFixed(1) : "0.0"; }
             document.getElementById('avgSpeed').innerText = (hours > 0.001) ? (distKm / hours).toFixed(1) : "0.0";
             
-           // [보정 포인트] 1km마다 속도 정보까지 상세하게 안내!
-           if (Math.floor(distKm) > lastAnnouncedKm) { 
-              lastAnnouncedKm = Math.floor(distKm); 
-    
-           // 현재 표시된 속도 값들을 가져옵니다.
-             var curS = document.getElementById('curSpeed').innerText;
-             var avgS = document.getElementById('avgSpeed').innerText;
-    
-           // 안내 멘트 구성
-            var speechMsg = lastAnnouncedKm + " 킬로미터 통과! " +
-                    "현재 속도는 시속 " + curS + " 킬로미터이며, " +
-                    "평균 속도는 시속 " + avgS + " 킬로미터입니다.";
-    
-             speak(speechMsg); 
-          }
+            if (Math.floor(distKm) > lastAnnouncedKm) { 
+                lastAnnouncedKm = Math.floor(distKm); 
+                var curS = document.getElementById('curSpeed').innerText;
+                var avgS = document.getElementById('avgSpeed').innerText;
+                speak(lastAnnouncedKm + " 킬로미터 통과! 현재 속도는 시속 " + curS + " 킬로미터이며, 평균 속도는 시속 " + avgS + " 킬로미터입니다."); 
+            }
         }
 
         function updateTimer() {
@@ -259,7 +255,6 @@
             var m = String(Math.floor((diff % 3600000) / 60000)).padStart(2, '0');
             var s = String(Math.floor((diff % 60000) / 1000)).padStart(2, '0');
             document.getElementById('timer').innerText = h + ":" + m + ":" + s;
-            updateDisplay();
         }
 
         function handleStop() {
@@ -275,10 +270,14 @@
         }
 
         function saveData() {
+            // [V6.3 수정] 완등 기록이 있다면 제목에 반영
+            var baseType = document.getElementById('workoutType').options[document.getElementById('workoutType').selectedIndex].text.split(' ')[1];
+            var finalType = achievedSummits.length > 0 ? achievedSummits.join(", ") + " 완등" : baseType;
+
             const hData = {
                 id: Date.now(),
                 date: new Date().toLocaleString(),
-                type: document.getElementById('workoutType').options[document.getElementById('workoutType').selectedIndex].text.split(' ')[0],
+                type: finalType,
                 dist: document.getElementById('distance').innerText,
                 time: document.getElementById('timer').innerText,
                 steps: document.getElementById('steps').innerText,
@@ -322,11 +321,10 @@
             }
         }
 
-        // 백그라운드 복귀 시 더 즉각적으로 반응하도록 수정
         document.addEventListener('visibilitychange', function() {
             if (document.visibilityState === 'visible' && workoutStarted) {
-                requestWakeLock(); // 웨이크락 재요청
-                startTracking();   // GPS 즉시 재가동
+                requestWakeLock();
+                startTracking();
             }
         });
     </script>
