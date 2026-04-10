@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>野郞 운동관리 v6.3</title>
+    <title>野郞 운동관리 v6.3.1</title>
     <style>
         html { font-size: 14px; } 
         body { margin: 0; padding: 10px; font-family: 'Malgun Gothic', sans-serif; background: linear-gradient(135deg, #fdfbfb 0%, #ebedee 100%); color: #333; overflow-x: hidden; }
@@ -217,13 +217,36 @@
             });
         }
 
-        function recordPhotoLocation() {
-            if (!workoutStarted || path.length === 0) return;
-            var currentPos = path[path.length - 1];
-            var pMarker = new kakao.maps.Marker({ position: currentPos, map: map, image: new kakao.maps.MarkerImage('https://t1.daumcdn.net/localimg/localimages/07/mapapidoc/markerStar.png', new kakao.maps.Size(24, 35)) });
-            photoMarkers.push(pMarker);
-            speak("촬영 지점 기록.");
-        }
+       // [v6.3.1 수정] 사진 지점 기록 함수 (카메라 아이콘 적용)
+function recordPhotoLocation() {
+    if (!workoutStarted || path.length === 0) return;
+    
+    // 1. 현재 위치 가져오기
+    var currentPos = path[path.length - 1];
+    
+    // 2. 깜찍한 카메라 아이콘 이미지 설정 (구글 이모티콘 이미지 주소)
+    // 크기는 가로 30px, 세로 30px로 아담하게 잡았습니다.
+    var imageSrc = 'https://fonts.gstatic.com/s/i/short-term/release/googlestyles/photo_camera/default/24px.svg', 
+        imageSize = new kakao.maps.Size(30, 30), // 아이콘 크기
+        imageOption = {offset: new kakao.maps.Point(15, 15)}; // 아이콘의 중심을 GPS 좌표에 맞춤
+        
+    var markerImage = new kakao.maps.MarkerImage(imageSrc, imageSize, imageOption);
+    
+    // 3. 카메라 마커 생성 및 지도에 표시
+    var pMarker = new kakao.maps.Marker({
+        position: currentPos,
+        image: markerImage, // 평범한 마커 대신 카메라 이미지를 사용!
+        map: map,
+        title: "사진 촬영 지점" // 마우스 올리면 뜨는 이름
+    });
+    
+    // 4. 마커 관리 바구니에 저장 (나중에 지우거나 할 때 필요)
+    photoMarkers.push(pMarker);
+    
+    // 5. 음성 안내
+    speak("촬영 지점을 지도에 표시했습니다.");
+}
+ 
 
         function updateDisplay(speed) {
             var distKm = totalDistance / 1000;
