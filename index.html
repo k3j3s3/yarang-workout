@@ -164,33 +164,54 @@
         }
 
        function startTracking() {
-        if (watchId) navigator.geolocation.clearWatch(watchId);
-             watchId = navigator.geolocation.watchPosition(function(pos) {
+    if (watchId) navigator.geolocation.clearWatch(watchId);
+
+    watchId = navigator.geolocation.watchPosition(function(pos) {
         if (!workoutStarted) return;
+
         var lat = pos.coords.latitude, lon = pos.coords.longitude;
         var newPos = new kakao.maps.LatLng(lat, lon);
+        var type = document.getElementById('workoutType').value;
         
-        if (path.length > 0) {
-            var line = new kakao.maps.Polyline({ path: [path[path.length - 1], newPos] });
-            var d = line.getLength();
+        // [오라버니의 특수 처방] 운동 종류별 최소 이동거리(문턱값) 설정
+        var minDistance = 0.5; // 기본값 (걷기)
+        if (type == "6.0") { minDistance = 0.3; }      // 등산: 아주 느린 보폭 고려
+        else if (type == "7.0") { minDistance = 1.0; } // 달리기: 반동 및 GPS 튐 방지
+        else if (type == "8.0") { minDistance = 1.5; } // 자전거: 빠른 속도 대응
 
-            // [보정 포인트] GPS 정확도가 20m 이내인 좋은 신호일 때만 거리로 인정!
-            // 그리고 너무 짧거나(2m 미만) 너무 긴(40m 초과) 도약은 무시합니다.
+        if (path.length > 0) {
+            var lastPos = path[path.length - 1];
+            var line = new kakao.maps.Polyline({ path: [lastPos, newPos] });
+            var d = line.getLength(); // 두 지점 사이의 거리(m)
+
+            // [보정 로직] 
+            // 1. GPS 정확도가 40m 이내인 비교적 깨끗한 신호일 것
+            // 2. 설정한 운동별 최소 거리(minDistance)보다 더 많이 움직였을 것
+            // 3. 순간 도약이 50m를 넘지 않을 것 (터널 등 신호 튐 방지)
             if (pos.coords.accuracy < 40) { 
-                if (d > 0.5 && d < 50.0) { 
+                if (d > minDistance && d < 50.0) { 
                     totalDistance += d; 
                 }
             }
         }
+
+        // 경로 그리기 및 지도 업데이트
         path.push(newPos);
         polyline.setPath(path);
         updateDisplay(pos.coords.speed);
         map.setCenter(newPos);
         marker.setPosition(newPos);
-    },
-    function(err) { console.error("GPS Error", err); }, 
-         { enableHighAccuracy: true, maximumAge: 0, timeout: 5000 });
-    }
+
+    }, function(err) { 
+        console.error("GPS Error", err); 
+    }, { 
+        enableHighAccuracy: true, 
+        maximumAge: 0, 
+        timeout: 5000 
+    });
+}
+
+       
         function recordPhotoLocation() {
             if (!workoutStarted || path.length === 0) return;
             var currentPos = path[path.length - 1];
