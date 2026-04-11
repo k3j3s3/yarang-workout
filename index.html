@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>야랑 운동관리 v6.3.1</title>
+    <title>야랑 운동관리 v6.4</title>
     <style>
         html { font-size: 14px; } 
         body { margin: 0; padding: 10px; font-family: 'Malgun Gothic', sans-serif; background: linear-gradient(135deg, #fdfbfb 0%, #ebedee 100%); color: #333; overflow-x: hidden; }
@@ -105,6 +105,38 @@
         var photoMarkers = [];
         var achievedSummits = [];
 
+        // 셔터음 및 시작 알림음을 위한 AudioContext
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+        function playStartBeep() {
+            if (!isSnd) return;
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(880, audioCtx.currentTime); // 뚜뚜
+            osc.frequency.exponentialRampToValueAtTime(1320, audioCtx.currentTime + 0.2); // 삐~
+            gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start();
+            osc.stop(audioCtx.currentTime + 0.3);
+        }
+
+        function playShutterSound() {
+            if (!isSnd) return;
+            const noise = audioCtx.createBufferSource();
+            const buffer = audioCtx.createBuffer(1, audioCtx.sampleRate * 0.1, audioCtx.sampleRate);
+            const data = buffer.getChannelData(0);
+            for (let i = 0; i < data.length; i++) { data[i] = Math.random() * 2 - 1; }
+            noise.buffer = buffer;
+            const gain = audioCtx.createGain();
+            gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
+            noise.connect(gain);
+            gain.connect(audioCtx.destination);
+            noise.start();
+        }
+
         function setSnd(val) {
             isSnd = val;
             document.getElementById('s-yes').classList.toggle('active-yes', val);
@@ -136,7 +168,10 @@
             
             if (window.DeviceMotionEvent) { window.addEventListener('devicemotion', handleMotion); }
             setTimeout(initMap, 300);
-            speak("운동을 시작합니다.");
+
+            // [V6.4 수정] 시작 멘트 변경
+            playStartBeep();
+            setTimeout(() => { speak("운동을 시작합니다."); }, 400);
         }
 
         function handleMotion(event) {
@@ -157,6 +192,7 @@
             startTracking();
         }
 
+        // [V6.4 중요] 백그라운드 추적 보강을 위한 WatchPosition 옵션 강화
         function startTracking() {
             if (watchId) navigator.geolocation.clearWatch(watchId);
             watchId = navigator.geolocation.watchPosition(function(pos) {
@@ -174,8 +210,8 @@
                     var lastPos = path[path.length - 1];
                     var line = new kakao.maps.Polyline({ path: [lastPos, newPos] });
                     var d = line.getLength();
-                    if (pos.coords.accuracy < 40) { 
-                        if (d > minDistance && d < 50.0) { totalDistance += d; }
+                    if (pos.coords.accuracy < 60) { // 산속을 고려해 정확도 범위를 살짝 넓힘(40->60)
+                        if (d > minDistance && d < 70.0) { totalDistance += d; }
                     }
                 }
                 path.push(newPos);
@@ -185,17 +221,20 @@
                 marker.setPosition(newPos);
 
                 if (type == "6.0") { checkSummit(lat, lon); }
-            }, function(err) { console.error(err); }, { enableHighAccuracy: true, maximumAge: 0, timeout: 5000 });
+            }, function(err) { console.error(err); }, 
+            { enableHighAccuracy: true, maximumAge: 0, timeout: 10000 }); // 백그라운드 응답 대기 시간 증가
         }
 
         function checkSummit(lat, lon) {
+            // 주소 조회 시 너무 잦은 호출 방지를 위해 마지막 경로에서만 체크
             var geocoder = new kakao.maps.services.Geocoder();
             geocoder.coord2Address(lon, lat, function(result, status) {
                 if (status === kakao.maps.services.Status.OK) {
                     var addr = result[0].address.address_name;
                     var words = addr.split(' ');
                     words.forEach(function(word) {
-                        if ((word.endsWith('산') || word.endsWith('봉')) && !achievedSummits.includes(word)) {
+                        // "산"으로 끝나는 단어 중 2글자 이상인 경우만 (오탐 방지)
+                        if ((word.endsWith('산') || word.endsWith('봉')) && word.length >= 2 && !achievedSummits.includes(word)) {
                             achievedSummits.push(word);
                             speak(word + " 부근에 도달했습니다. 완등을 축하합니다!");
                         }
@@ -213,7 +252,9 @@
             var markerImage = new kakao.maps.MarkerImage(imageSrc, imageSize, imageOption);
             var pMarker = new kakao.maps.Marker({ position: currentPos, image: markerImage, map: map });
             photoMarkers.push(pMarker);
-            speak("촬영 지점 기록 완료.");
+
+            // [V6.4 수정] 멘트 제거 및 셔터음 추가
+            playShutterSound();
         }
 
         function updateDisplay(speed) {
@@ -301,6 +342,14 @@
                 renderHistory();
             }
         }
+
+        // 백그라운드에서 포그라운드로 올 때 GPS 연결 재확인
+        document.addEventListener('visibilitychange', function() {
+            if (document.visibilityState === 'visible' && workoutStarted) {
+                requestWakeLock();
+                startTracking();
+            }
+        });
     </script>
 </body>
 </html>
