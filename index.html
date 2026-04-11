@@ -109,18 +109,39 @@
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 
         function playStartBeep() {
-            if (!isSnd) return;
-            const osc = audioCtx.createOscillator();
-            const gain = audioCtx.createGain();
-            osc.type = 'sine';
-            osc.frequency.setValueAtTime(880, audioCtx.currentTime); // 뚜뚜
-            osc.frequency.exponentialRampToValueAtTime(1320, audioCtx.currentTime + 0.2); // 삐~
-            gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
-            osc.connect(gain);
-            gain.connect(audioCtx.destination);
-            osc.start();
-            osc.stop(audioCtx.currentTime + 0.3);
-        }
+    if (!isSnd) return;
+    
+    const now = audioCtx.currentTime;
+    const freqSmall = 440; // '뚜' 소리 (A4 음계)
+    const freqBig = 880;   // '삐' 소리 (A5 음계, 한 옥타브 높음)
+
+    // 세 번의 짧은 '뚜' 소리
+    [0, 0.5, 1.0].forEach((delay) => {
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(freqSmall, now + delay);
+        gain.gain.setValueAtTime(0.1, now + delay);
+        gain.gain.setValueAtTime(0.001, now + delay + 0.1); // 짧게 끊어줌
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start(now + delay);
+        osc.stop(now + delay + 0.1);
+    });
+
+    // 마지막 길고 높은 '삐~' 소리
+    const oscFinal = audioCtx.createOscillator();
+    const gainFinal = audioCtx.createGain();
+    oscFinal.type = 'sine';
+    oscFinal.frequency.setValueAtTime(freqBig, now + 1.5);
+    gainFinal.gain.setValueAtTime(0.1, now + 1.5);
+    gainFinal.gain.exponentialRampToValueAtTime(0.001, now + 2.0); // 부드럽게 사라짐
+    oscFinal.connect(gainFinal);
+    gainFinal.connect(audioCtx.destination);
+    oscFinal.start(now + 1.5);
+    oscFinal.stop(now + 2.0);
+}
+
 
         function playShutterSound() {
             if (!isSnd) return;
