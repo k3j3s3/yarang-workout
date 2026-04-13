@@ -222,17 +222,17 @@
                 var newPos = new kakao.maps.LatLng(lat, lon);
                 var type = document.getElementById('workoutType').value;
 
-                var minDistance = 0.5; 
+                var minDistance = 0.3; 
                 if (type == "6.0") { minDistance = 0.3; }
-                else if (type == "7.0") { minDistance = 1.0; }
-                else if (type == "8.0") { minDistance = 1.5; }
+                else if (type == "7.0") { minDistance = 0.5; }
+                else if (type == "8.0") { minDistance = 1.0; }
 
                 if (path.length > 0) {
                     var lastPos = path[path.length - 1];
                     var line = new kakao.maps.Polyline({ path: [lastPos, newPos] });
                     var d = line.getLength();
-                    if (pos.coords.accuracy < 60) { // 산속을 고려해 정확도 범위를 살짝 넓힘(40->60)
-                        if (d > minDistance && d < 70.0) { totalDistance += d; }
+                    if (pos.coords.accuracy < 80) { // 산속을 고려해 정확도 범위를 살짝 넓힘(40->100)
+                        if (d > minDistance && d < 100.0) { totalDistance += d; }
                     }
                 }
                 path.push(newPos);
@@ -291,10 +291,12 @@
             if (speed !== undefined) { document.getElementById('curSpeed').innerText = (speed > 0) ? (speed * 3.6).toFixed(1) : "0.0"; }
             document.getElementById('avgSpeed').innerText = (hours > 0.001) ? (distKm / hours).toFixed(1) : "0.0";
             if (Math.floor(distKm) > lastAnnouncedKm) { 
-                lastAnnouncedKm = Math.floor(distKm); 
-                speak(lastAnnouncedKm + " 킬로미터 통과!"); 
-            }
-        }
+        lastAnnouncedKm = Math.floor(distKm); 
+        var curS = document.getElementById('curSpeed').innerText; // 현재속도 화면값
+        var avgS = document.getElementById('avgSpeed').innerText; // 평균속도 화면값
+        speak(lastAnnouncedKm + " 킬로미터 통과! 현재 속도는 시속 " + curS + " 킬로미터이며, 평균 속도는 시속 " + avgS + " 킬로미터입니다."); 
+    }
+}
 
         function updateTimer() {
             var diff = Date.now() - startTime;
