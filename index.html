@@ -201,7 +201,7 @@
             if (!acc) return;
             let totalAcc = Math.sqrt(acc.x*acc.x + acc.y*acc.y + acc.z*acc.z);
             let delta = Math.abs(totalAcc - lastAccel);
-            if (delta > 6.0) { sensorSteps++; updateDisplay(); }
+            if (delta > 8.0) { sensorSteps++; updateDisplay(); }
             lastAccel = totalAcc;
         }
 
